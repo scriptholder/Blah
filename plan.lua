@@ -1,7 +1,15 @@
 local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/discoart/FluentPlus/refs/heads/main/alpha.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+InterfaceManager:SetLibrary(Fluent)
+InterfaceManager:SetFolder("dihdihdihplandih")
+InterfaceManager:BuildInterfaceSection(Settings)
+
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+
+SaveManager:SetLibrary(Fluent)
+SaveManager:SetFolder("plandihloverfr")
+SaveManager:BuildConfigSection(Settings)
 local Window = Fluent:CreateWindow({
     Title = "Build a Plane - Dead" .. Fluent.Version,
     SubTitle = "by Dead",
