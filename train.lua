@@ -124,6 +124,7 @@ end
 -- ----------------------------
 -- Auto Claim (calls stored claimremote)
 -- ----------------------------
+
 local function autoclaim_once()
     if not claimremote then
         safeNotify("Auto Claim", "No claim remote set!", 2)
@@ -142,43 +143,32 @@ local function autoclaim_once()
         return false
     end
 
-    -- Delete UI named "Menu" in PlayerGui (if exists)
     local successDelete = false
+
+    -- Delete "Menu" UI
     local menuUI = LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("Menu")
     if menuUI then
         pcall(function() menuUI:Destroy() end)
         warn("[claim] Deleted 'Menu' UI after claim.")
         successDelete = true
     end
-    
-     (if exists)
-    local successDelete = false
-    local menuUI = LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("DarkBackground")
-    if menuUI then
-        pcall(function() menuUI:Destroy() end)
-        warn("[claim] Deleted 'dark bg' UI after claim.")
+
+    -- Delete "DarkBackground" UI
+    local darkBgUI = LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("DarkBackground")
+    if darkBgUI then
+        pcall(function() darkBgUI:Destroy() end)
+        warn("[claim] Deleted 'DarkBackground' UI after claim.")
         successDelete = true
     end
 
     warn("[claim] Claimed money successfully.")
     if successDelete then
-        safeNotify("Auto Claim", "Claimed and removed Menu UI.", 2)
+        safeNotify("Auto Claim", "Claimed and removed UI.", 2)
     else
         safeNotify("Auto Claim", "Claimed successfully.", 2)
     end
 
     return true
-end
-
--- Auto-claim loop if toggle on
-local function startAutoClaimLoop()
-    task.spawn(function()
-        while autoclaimenabled do
-            autoclaim_once()
-            task.wait(2)
-        end
-        warn("[claim] Auto-claim loop ended.")
-    end)
 end
 
 -- ----------------------------
