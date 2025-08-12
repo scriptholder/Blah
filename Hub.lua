@@ -1,6 +1,6 @@
 local scriptMappings = {
     [137925884276740] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/plan.lua",
-    [123963759682880] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/Train.lua",
+    [123963759682880] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/train.lua",
 }
 
 local currentId = game.PlaceId
