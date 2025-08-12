@@ -1,18 +1,27 @@
--- Table linking place IDs to their loader URLs
 local scriptMappings = {
-    -- Build a Plane (BLOOD MOON AUTOFARM)
     [137925884276740] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/plan.lua",
-    -- Build a train
     [123963759682880] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/Train.lua",
-    
 }
 
--- Check the current PlaceId and fetch the matching script
 local currentId = game.PlaceId
-if scriptMappings[currentId] then
-    local url = scriptMappings[currentId]
-    local scriptContent = game:HttpGet(url)
-    loadstring(scriptContent)()
+local url = scriptMappings[currentId]
+
+if url then
+    print("Loading script for PlaceId:", currentId)
+    local success, scriptContent = pcall(game.HttpGet, game, url)
+    if success and scriptContent and scriptContent ~= "" then
+        local func, loadErr = loadstring(scriptContent)
+        if func then
+            local runSuccess, runErr = pcall(func)
+            if not runSuccess then
+                warn("Error running script:", runErr)
+            end
+        else
+            warn("Error compiling script:", loadErr)
+        end
+    else
+        warn("Failed to fetch script from URL:", url)
+    end
 else
     warn("No script found for this PlaceId:", currentId)
 end
