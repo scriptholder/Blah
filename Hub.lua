@@ -2,7 +2,9 @@
 local scriptMappings = {
     -- Build a Plane (BLOOD MOON AUTOFARM)
     [137925884276740] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/plan.lua",
-
+    -- Build a train
+    [123963759682880] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/Train.lua",
+    
 }
 
 -- Check the current PlaceId and fetch the matching script
