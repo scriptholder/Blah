@@ -6,6 +6,9 @@
     },
     "VIP": {
       "durationDays": 30
+    },
+    "ghost": {
+      "durationDays": 30
     }
   }
 }
