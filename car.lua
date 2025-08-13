@@ -89,60 +89,66 @@ task.spawn(function()
 end)
 
 Main:AddButton({
-    Title = "Get inf money",
-    Description = "Spawn vehicle, fling, then stop vehicle for infinite money",
-    Callback = function()
-        pcall(function()
-            local Players = game:GetService('Players')
-            local LocalPlayer = Players.LocalPlayer
-            local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-            local Root = Character:WaitForChild('HumanoidRootPart')
-            local Remotes = workspace:WaitForChild('__THINGS'):WaitForChild('__REMOTES')
+	Title = 'Infinite Cash',
+	Description = 'Gives you infinite money ( keep clicking if it didnt work it will eventually)',
+	Callback = function()
+		local Players = game:GetService('Players')
+		local LocalPlayer = Players.LocalPlayer
+		local Character = LocalPlayer.Character
+			or LocalPlayer.CharacterAdded:Wait()
+		local Root = Character:WaitForChild('HumanoidRootPart')
+		local Remotes = workspace
+			:WaitForChild('__THINGS')
+			:WaitForChild('__REMOTES')
 
-            -- 1️⃣ Spawn vehicle first
-            local spawnRemote = Remotes:WaitForChild('vehicle_spawn')
-            local spawnSuccess = pcall(function()
-                spawnRemote:InvokeServer()
-            end)
-            print(spawnSuccess and '🚗 Vehicle spawn fired' or '❌ Failed to fire vehicle_spawn')
+		for _, part in ipairs(Character:GetDescendants()) do
+			if part:IsA('BasePart') then
+				part.Anchored = false
+				part.CanCollide = true
+			end
+		end
 
-            -- 2️⃣ Do fling
-            for _, part in ipairs(Character:GetDescendants()) do
-                if part:IsA('BasePart') then
-                    part.Anchored = false
-                    part.CanCollide = true
-                end
-            end
+		local spin = Instance.new('BodyAngularVelocity')
+		spin.AngularVelocity = Vector3.new(999999, 999999, 999999)
+		spin.MaxTorque = Vector3.new(1, 1, 1) * math.huge
+		spin.P = math.huge
+		spin.Parent = Root
 
-            local spin = Instance.new('BodyAngularVelocity')
-            spin.AngularVelocity = Vector3.new(999999, 999999, 999999)
-            spin.MaxTorque = Vector3.new(1, 1, 1) * math.huge
-            spin.P = math.huge
-            spin.Parent = Root
+		local bv = Instance.new('BodyVelocity')
+		bv.Velocity = Root.CFrame.LookVector * 1500
+		bv.MaxForce = Vector3.new(1, 1, 1) * 1e9
+		bv.P = 1e6
+		bv.Parent = Root
 
-            local bv = Instance.new('BodyVelocity')
-            bv.Velocity = Root.CFrame.LookVector * 1500
-            bv.MaxForce = Vector3.new(1, 1, 1) * 1e9
-            bv.P = 1e6
-            bv.Parent = Root
+		print('💥 You were flung like a goddamn cannonball')
 
-            print('💥 You were flung like a goddamn cannonball')
+		task.delay(3, function()
+			spin:Destroy()
+			bv:Destroy()
+		end)
 
-            task.delay(3, function()
-                spin:Destroy()
-                bv:Destroy()
-            end)
+		task.delay(1, function()
+			local spawnRemote = Remotes:WaitForChild('vehicle_spawn')
+			local success = pcall(function()
+				spawnRemote:InvokeServer()
+			end)
+			print(
+				success and '🚗 Vehicle spawn fired'
+					or '❌ Failed to fire vehicle_spawn'
+			)
+		end)
 
-            -- 3️⃣ Stop vehicle after fling
-            task.delay(8, function()
-                local stopRemote = Remotes:WaitForChild('vehicle_stop')
-                local stopSuccess = pcall(function()
-                    stopRemote:InvokeServer()
-                end)
-                print(stopSuccess and '🛑 Vehicle stop fired' or '❌ Failed to fire vehicle_stop')
-            end)
-        end)
-    end,
+		task.delay(11, function()
+			local stopRemote = Remotes:WaitForChild('vehicle_stop')
+			local success = pcall(function()
+				stopRemote:InvokeServer()
+			end)
+			print(
+				success and '🛑 Vehicle stop fired'
+					or '❌ Failed to fire vehicle_stop'
+			)
+		end)
+	end,
 })
 
 local dropdown = Shop:AddDropdown("dropdown", {
