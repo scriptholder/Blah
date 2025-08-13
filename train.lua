@@ -750,4 +750,22 @@ farmsec:AddButton({
 -- ----------------------------
 -- End of script
 warn("[SCRIPT] Full script loaded. Keep your exploit hooked to hookmetamethod for remote detection to work.")
-safeNotify("Script", "Build a train script loaded.", 2)
+
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+InterfaceManager:SetFolder("DeadScriptHub")
+SaveManager:SetFolder("DeadScriptHub/BuildAPpane")
+InterfaceManager:BuildInterfaceSection(Settings)
+SaveManager:BuildConfigSection(Settings)
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "Build a Car",
+    Content = "Script loaded and ready.",
+    Duration = 8,
+})
+
+SaveManager:LoadAutoloadConfig()
