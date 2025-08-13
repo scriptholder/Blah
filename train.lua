@@ -763,7 +763,7 @@ SaveManager:BuildConfigSection(Settings)
 Window:SelectTab(1)
 
 Fluent:Notify({
-    Title = "Build a Car",
+    Title = "Build a Train",
     Content = "Script loaded and ready.",
     Duration = 8,
 })
