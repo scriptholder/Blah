@@ -9,7 +9,8 @@
       "hwid": "2cedc79e-9c6d-4708-bb2a-22688a0b7ccd"
     },
     "ghost": {
-      "durationDays": 30
+      "durationDays": 30,
+      "hwid": "33813a45-9dd9-4fbb-872b-348669973d76"
     }
   }
 }
