@@ -105,7 +105,7 @@ Main:AddButton({
 local dropdown = Shop:AddDropdown("dropdown", {
     Title = "Select Items",
     Description = "Select items to buy",
-    Multi = true,
+    Multiselect = true,
     Values = items,
     Callback = function(selected)
         selectedItems = selected or {}
