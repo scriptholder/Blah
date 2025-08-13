@@ -595,4 +595,21 @@ mainsection:AddSlider("FlyHeight", {
     end
 })
 
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+InterfaceManager:SetFolder("DeadScriptHub")
+SaveManager:SetFolder("DeadScriptHub/BuildAPpane")
+InterfaceManager:BuildInterfaceSection(Settings)
+SaveManager:BuildConfigSection(Settings)
 
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "Build a Plane",
+    Content = "Script loaded and ready.",
+    Duration = 8,
+})
+
+SaveManager:LoadAutoloadConfig()
