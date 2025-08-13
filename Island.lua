@@ -3,8 +3,8 @@
 -- UI
 local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/discoart/FluentPlus/refs/heads/main/alpha.lua"))()
 local Window = Fluent:CreateWindow({
-    Title = "Seisen Hub - Build a Island  •  " .. Fluent.Version,
-    SubTitle = "by Seisen",
+    Title = "Dead hub - Build a Island  •  " .. Fluent.Version,
+    SubTitle = "by Dead",
     TabWidth = 140,
     Size = UDim2.fromOffset(560, 480),
     Acrylic = false,
