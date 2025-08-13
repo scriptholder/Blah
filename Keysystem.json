@@ -1,8 +1,11 @@
-
 {
-  "freeKey": "dead",
+  "freeKey": "release",
   "premiumKeys": {
-    "PremiumKey123": { "durationDays": 7},
-    "VIP": { "durationDays": 30 }
+    "PremiumKey123": {
+      "durationDays": 7
+    },
+    "VIP": {
+      "durationDays": 30
+    }
   }
 }
