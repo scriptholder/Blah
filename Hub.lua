@@ -3,7 +3,7 @@ local scriptMappings = {
     [123963759682880] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/train.lua",
     [88728793053496] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/car.lua",
     [101949297449238] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/Island.lua",
-    [112279762578792/] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/Mine.lua",
+    [112279762578792] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/mine.lua",
 }
 
 
