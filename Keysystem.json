@@ -11,6 +11,9 @@
     "ghost": {
       "durationDays": 30,
       "hwid": "33813a45-9dd9-4fbb-872b-348669973d76"
+    },
+    "alexis": {
+      "durationDays": 30
     }
   }
 }
