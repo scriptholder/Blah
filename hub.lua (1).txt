@@ -1,0 +1,1885 @@
+local serverApi = loadstring(game:HttpGet("https://raw.githubusercontent.com/discoart/i/refs/heads/main/fetch.lua"))()
+local currentVersion = serverApi.version
+
+if game.PlaceId == 1537690962 and currentVersion == '1.0' then
+    if not game:IsLoaded() then
+        game.Loaded:Wait()
+    end
+    
+    local fluentSuccess, FluentLib = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/discoart/FluentPlus/refs/heads/main/alpha.lua"))()
+    end)
+    
+    if not fluentSuccess then
+        return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+    end
+    
+    local InterfaceManager = getgenv().InterfaceManager 
+    local SaveManager = getgenv().SaveManager
+    
+    local RunService = game:GetService("RunService")
+    local UserInputService = game:GetService("UserInputService")
+    local PathfindingService = game:GetService("PathfindingService")
+    local TeleportService = game:GetService("TeleportService")
+    local HttpService = game:GetService("HttpService")
+    local workspaceService = game:GetService("Workspace")
+    
+    local localPlayer = game.Players.LocalPlayer
+    local playerCharacter = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    local humanoidRoot = playerCharacter:WaitForChild("HumanoidRootPart")
+    
+    local isMobile = table.find({Enum.Platform.IOS, Enum.Platform.Android}, UserInputService:GetPlatform()) ~= nil
+    
+    _G.AutoDetectField = true
+    _G.NoClipMovement = true
+    _G.AutoHoney = true
+    _G.IgnoreHoneyTokens = false
+    _G.Field = "Clover field"
+    _G.FieldCoord = CFrame.new(174, 34, 189)
+    
+    localPlayer.CharacterAdded:Connect(function(newCharacter)
+        playerCharacter = newCharacter
+        humanoidRoot = newCharacter:WaitForChild("HumanoidRootPart")
+    end)
+
+    local autoHoneySystem = {
+        isProcessing = false,
+        returnField = nil
+    }
+
+    function autoHoneySystem:CheckAndProcess()
+        if self.isProcessing then return end
+        
+        if not localPlayer:FindFirstChild("CoreStats") then return end
+        if not localPlayer.CoreStats:FindFirstChild("Pollen") then return end
+        if not localPlayer.CoreStats:FindFirstChild("Capacity") then return end
+        
+        local pollen = localPlayer.CoreStats.Pollen.Value
+        local capacity = localPlayer.CoreStats.Capacity.Value
+        
+        if pollen >= capacity and _G.AutoHoney then
+            self.isProcessing = true
+            self.returnField = _G.FieldCoord.Position
+            
+            if autoCollectSystem then
+                autoCollectSystem:Stop()
+            end
+            
+            task.spawn(function()
+                local platform = Instance.new("Part")
+                platform.Size = Vector3.new(8, 1, 8)
+                platform.Anchored = true
+                platform.CanCollide = true
+                platform.Transparency = 0
+                platform.BrickColor = BrickColor.new("Bright blue")
+                platform.Parent = workspaceService
+                
+                local originalCanCollide = {}
+                for _, part in pairs(playerCharacter:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        originalCanCollide[part] = part.CanCollide
+                        if _G.NoClipMovement then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+                
+                local startPos = humanoidRoot.Position
+                
+                local function updatePlatform(targetPos)
+                    if platform and humanoidRoot then
+                        local currentPos = humanoidRoot.Position
+                        local platformY = currentPos.Y - 4
+                        
+                        if targetPos then
+                            local totalDist = (targetPos - startPos).Magnitude
+                            local remainingDist = (targetPos - currentPos).Magnitude
+                            
+                            if totalDist > 5 then
+                                local progress = math.max(0, math.min(1, (totalDist - remainingDist) / totalDist))
+                                local targetPlatformY = targetPos.Y - 4
+                                local startPlatformY = startPos.Y - 4
+                                platformY = startPlatformY + (targetPlatformY - startPlatformY) * progress
+                            end
+                        end
+                        
+                        platform.Position = Vector3.new(currentPos.X, platformY, currentPos.Z)
+                    end
+                end
+                
+                local function maintainNoclip()
+                    if _G.NoClipMovement then
+                        for _, part in pairs(playerCharacter:GetChildren()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                            end
+                        end
+                    end
+                end
+                
+                local spawnPos = nil
+                if localPlayer:FindFirstChild("SpawnPos") and localPlayer.SpawnPos.Value then
+                    spawnPos = localPlayer.SpawnPos.Value
+                    if typeof(spawnPos) == "CFrame" then
+                        spawnPos = spawnPos.Position
+                    end
+                else
+                    spawnPos = Vector3.new(265, 32, 242)
+                end
+                
+                local platformConnection = RunService.Heartbeat:Connect(function()
+                    updatePlatform(spawnPos)
+                    maintainNoclip()
+                end)
+                
+                local humanoid = playerCharacter.Humanoid
+                local lastPos = humanoidRoot.Position
+                local stuckTime = 0
+                
+                humanoid:MoveTo(spawnPos)
+                
+                repeat
+                    task.wait(0.1)
+                    updatePlatform(spawnPos)
+                    maintainNoclip()
+                    
+                    local currentPos = humanoidRoot.Position
+                    local moved = (currentPos - lastPos).Magnitude
+                    
+                    if moved < 0.5 then
+                        stuckTime = stuckTime + 0.1
+                        if stuckTime > 2 then
+                            humanoid:MoveTo(spawnPos)
+                            stuckTime = 0
+                        end
+                    else
+                        stuckTime = 0
+                    end
+                    
+                    lastPos = currentPos
+                until (humanoidRoot.Position - spawnPos).Magnitude < 10
+                
+                local success = pcall(function()
+                    game:GetService("ReplicatedStorage").Events.PlayerHiveCommand:FireServer("ToggleHoneyMaking")
+                end)
+                if not success then
+                    pcall(function()
+                        game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer({["Name"] = "ToggleHoneyMaking"})
+                    end)
+                end
+                
+                repeat
+                    task.wait(0.5)
+                    updatePlatform(spawnPos)
+                    maintainNoclip()
+                until localPlayer.CoreStats and localPlayer.CoreStats.Pollen and localPlayer.CoreStats.Pollen.Value <= 0
+                
+                task.wait(4)
+                
+                if self.returnField then
+                    local humanoid = playerCharacter.Humanoid
+                    local lastPos = humanoidRoot.Position
+                    local stuckTime = 0
+                    
+                    humanoid:MoveTo(self.returnField)
+                    
+                    repeat
+                        task.wait(0.1)
+                        updatePlatform(self.returnField)
+                        maintainNoclip()
+                        
+                        local currentPos = humanoidRoot.Position
+                        local moved = (currentPos - lastPos).Magnitude
+                        
+                        if moved < 0.5 then
+                            stuckTime = stuckTime + 0.1
+                            if stuckTime > 2 then
+                                humanoid:MoveTo(self.returnField)
+                                stuckTime = 0
+                            end
+                        else
+                            stuckTime = 0
+                        end
+                        
+                        lastPos = currentPos
+                    until (humanoidRoot.Position - self.returnField).Magnitude < 15
+                end
+                
+                platformConnection:Disconnect()
+                platform:Destroy()
+                
+                for part, canCollide in pairs(originalCanCollide) do
+                    if part and part.Parent then
+                        part.CanCollide = canCollide
+                    end
+                end
+                
+                task.wait(0.5)
+                if autoCollectSystem then
+                    autoCollectSystem:Start()
+                end
+                self.isProcessing = false
+            end)
+        end
+    end
+
+    local cloudUtilitySystem = {
+        enabled = false,
+        connection = nil,
+        underCloudTime = 0,
+        lastCloudCheck = 0,
+        isUnderCloud = false
+    }
+
+    local bubbleUtilitySystem = {
+        enabled = false,
+        visitedBubbles = {}
+    }
+
+    local balloonUtilitySystem = {
+        enabled = false,
+        currentBalloon = nil,
+        underBalloonTime = 0,
+        lastTokenCheck = 0
+    }
+
+    local autoCollectSystem = {
+        enabled = false,
+        connection = nil,
+        pathQueue = {},
+        currentIndex = 1,
+        lastUpdate = 0,
+        lockedTarget = nil,
+        randomTarget = nil,
+        randomUpdateTime = 0,
+        noclipParts = {}
+    }
+
+    function autoCollectSystem:CheckPriorityToken()
+        if not _G.FieldCoord then return nil end
+        local collectibles = workspaceService.Collectibles:GetChildren()
+        
+        for i = 1, #collectibles do
+            local token = collectibles[i]
+            if token.Name == localPlayer.Name or token.Name == "C" then
+                local tokenPos = token.Position
+                
+                if self:IsTokenInField(tokenPos) then
+                    local backDecal = token.BackDecal
+                    if backDecal and backDecal.Texture == "rbxassetid://1629547638" then
+                        return tokenPos
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+    function autoCollectSystem:GetRandomFlowerCell()
+        if not _G.FieldCoord then
+            return Vector3.new(0, 0, 0)
+        end
+        
+        local fieldCenter = _G.FieldCoord.Position
+        local angle = math.random() * 2 * math.pi
+        local distance = math.random(10, 30)
+        
+        return Vector3.new(
+            fieldCenter.X + math.cos(angle) * distance,
+            fieldCenter.Y,
+            fieldCenter.Z + math.sin(angle) * distance
+        )
+    end
+
+    function autoCollectSystem:IsTokenInField(tokenPos)
+        if not _G.FieldCoord then return false end
+        local fieldCenter = _G.FieldCoord.Position
+        local distSq = (tokenPos.X - fieldCenter.X)^2 + (tokenPos.Z - fieldCenter.Z)^2
+        return distSq <= 2500
+    end
+
+    function autoCollectSystem:PlanPath()
+        if not _G.FieldCoord or not humanoidRoot then return end
+        local playerPos = humanoidRoot.Position
+        local tokens = {}
+        
+        local collectibles = workspaceService.Collectibles:GetChildren()
+        for i = 1, #collectibles do
+            local token = collectibles[i]
+            if token.Name == localPlayer.Name or token.Name == "C" then
+                local tokenPos = token.Position
+                
+                if self:IsTokenInField(tokenPos) then
+                    local shouldCollect = true
+                    if _G.IgnoreHoneyTokens then
+                        local backDecal = token.BackDecal
+                        if backDecal and backDecal.Texture == "rbxassetid://1472135114" then
+                            shouldCollect = false
+                        end
+                    end
+                    
+                    if shouldCollect then
+                        local distSq = (tokenPos.X - playerPos.X)^2 + (tokenPos.Z - playerPos.Z)^2
+                        tokens[#tokens + 1] = {pos = tokenPos, distSq = distSq}
+                    end
+                end
+            end
+        end
+        
+        if #tokens == 0 then
+            if not self.randomTarget then
+                self.randomTarget = self:GetRandomFlowerCell()
+            end
+            self.pathQueue = {self.randomTarget}
+            return
+        end
+        
+        self.randomTarget = nil
+        local path = {}
+        local used = {}
+        local currentPos = playerPos
+        
+        for _ = 1, math.min(5, #tokens) do
+            local bestIdx = 0
+            local bestDist = 999999
+            
+            for i = 1, #tokens do
+                if not used[i] then
+                    local distSq = (tokens[i].pos.X - currentPos.X)^2 + (tokens[i].pos.Z - currentPos.Z)^2
+                    if distSq < bestDist then
+                        bestDist = distSq
+                        bestIdx = i
+                    end
+                end
+            end
+            
+            if bestIdx > 0 then
+                path[#path + 1] = tokens[bestIdx].pos
+                used[bestIdx] = true
+                currentPos = tokens[bestIdx].pos
+            end
+        end
+        
+        self.pathQueue = path
+    end
+
+    function autoCollectSystem:Start()
+        if self.enabled then return end
+        self.enabled = true
+        
+        if _G.NoClipMovement and playerCharacter then
+            for _, part in pairs(playerCharacter:GetChildren()) do
+                if part:IsA("BasePart") then
+                    self.noclipParts[part] = part.CanCollide
+                    part.CanCollide = false
+                end
+            end
+        end
+        
+        self.connection = RunService.RenderStepped:Connect(function()
+            if not humanoidRoot or not playerCharacter then return end
+            if autoHoneySystem and autoHoneySystem.isProcessing then return end
+            
+            local humanoid = playerCharacter.Humanoid
+            local currentTime = tick()
+            
+            local cloudTarget = cloudUtilitySystem.enabled and cloudUtilitySystem:GetCloudTarget()
+            local bubbleTarget = bubbleUtilitySystem.enabled and bubbleUtilitySystem:GetBubbleTarget()
+            local balloonTarget = balloonUtilitySystem.enabled and balloonUtilitySystem:GetBalloonTarget()
+            
+            if balloonTarget then
+                self.lockedTarget = balloonTarget
+                self.pathQueue = {balloonTarget}
+                self.currentIndex = 1
+            elseif cloudTarget then
+                self.lockedTarget = cloudTarget
+                self.pathQueue = {cloudTarget}
+                self.currentIndex = 1
+            elseif bubbleTarget then
+                self.lockedTarget = bubbleTarget
+                self.pathQueue = {bubbleTarget}
+                self.currentIndex = 1
+            else
+                local priorityToken = self:CheckPriorityToken()
+                if priorityToken then
+                    self.lockedTarget = priorityToken
+                    self.pathQueue = {priorityToken}
+                    self.currentIndex = 1
+                elseif not self.lockedTarget then
+                    if #self.pathQueue == 0 or self.currentIndex > #self.pathQueue then
+                        self:PlanPath()
+                        self.currentIndex = 1
+                        self.lastUpdate = currentTime
+                        
+                        if #self.pathQueue == 0 then
+                            self.randomTarget = self:GetRandomFlowerCell()
+                            self.pathQueue = {self.randomTarget}
+                            self.currentIndex = 1
+                        end
+                    elseif currentTime - self.lastUpdate > 5 then
+                        self:PlanPath()
+                        self.currentIndex = 1
+                        self.lastUpdate = currentTime
+                    end
+                end
+            end
+            
+            if #self.pathQueue > 0 and self.currentIndex <= #self.pathQueue then
+                local target = self.pathQueue[self.currentIndex]
+                local distSq = (target.X - humanoidRoot.Position.X)^2 + (target.Z - humanoidRoot.Position.Z)^2
+                
+                if distSq < 25 then
+                    if self.lockedTarget and (target.X == self.lockedTarget.X and target.Z == self.lockedTarget.Z) then
+                        self.lockedTarget = nil
+                    end
+                    
+                    self.currentIndex = self.currentIndex + 1
+                    if self.currentIndex <= #self.pathQueue then
+                        target = self.pathQueue[self.currentIndex]
+                    else
+                        if self.randomTarget then
+                            self.randomTarget = nil
+                        end
+                    end
+                end
+                
+                if self.currentIndex <= #self.pathQueue then
+                    local walkPoint = humanoid.WalkToPoint
+                    local diffSq = (target.X - walkPoint.X)^2 + (target.Z - walkPoint.Z)^2
+                    if walkPoint.X == 0 or diffSq > 9 then
+                        humanoid:MoveTo(target)
+                    end
+                end
+            end
+        end)
+    end
+
+    function autoCollectSystem:Stop()
+        self.enabled = false
+        if self.connection then
+            self.connection:Disconnect()
+            self.connection = nil
+        end
+        
+        if playerCharacter then
+            for part, canCollide in pairs(self.noclipParts) do
+                if part and part.Parent then
+                    part.CanCollide = canCollide
+                end
+            end
+        end
+        self.noclipParts = {}
+        
+        self.pathQueue = {}
+        self.currentIndex = 1
+        self.lockedTarget = nil
+        self.randomTarget = nil
+        self.randomUpdateTime = 0
+    end
+
+    local fieldDetectSystem = {
+        enabled = false,
+        connection = nil
+    }
+    
+    local locations = {
+        "Clover field",
+        "Mushroom field", 
+        "Spider field",
+        "Blue flower field",
+        "Sunflower field",
+        "Strawberry field",
+        "Dandelion field", 
+        "Bamboo field",
+        "Rose field",
+        "Cactus field",
+        "Pumpkin patch",
+        "Mountain top field",
+        "Pinetree forest",
+        "Pineapple patch",
+        "Coconut field",
+        "Pepper patch",
+        "Stump field"
+    }
+
+    local fieldGrids = {
+        ["Sunflower field"] = {index = 1, rows = 19, cols = 32},
+        ["Dandelion field"] = {index = 2, rows = 35, cols = 17},
+        ["Mushroom field"] = {index = 3, rows = 31, cols = 22},
+        ["Blue flower field"] = {index = 4, rows = 42, cols = 16},
+        ["Clover field"] = {index = 5, rows = 25, cols = 28},
+        ["Spider field"] = {index = 6, rows = 27, cols = 25},
+        ["Strawberry field"] = {index = 7, rows = 21, cols = 25},
+        ["Bamboo field"] = {index = 8, rows = 38, cols = 17},
+        ["Pineapple patch"] = {index = 9, rows = 32, cols = 22},
+        ["Cactus field"] = {index = 10, rows = 32, cols = 17},
+        ["Pumpkin patch"] = {index = 11, rows = 32, cols = 16},
+        ["Stump field"] = {index = 12, rows = 22, cols = 30},
+        ["Rose field"] = {index = 13, rows = 30, cols = 19},
+        ["Mountain top field"] = {index = 14, rows = 13, cols = 27},
+        ["Pinetree forest"] = {index = 15, rows = 30, cols = 11},
+        ["Coconut field"] = {index = 17, rows = 29, cols = 19},
+        ["Pepper patch"] = {index = 18, rows = 20, cols = 26}
+    }
+
+    local coordinates = {
+        ["Clover field"] = CFrame.new(174, 34, 189),
+        ["Mushroom field"] = CFrame.new(-86, 2, 118),
+        ["Spider field"] = CFrame.new(-57.2, 20, -5.3),
+        ["Blue flower field"] = CFrame.new(113.7, 4, 101.5),
+        ["Sunflower field"] = CFrame.new(-208, 4, 185),
+        ["Strawberry field"] = CFrame.new(-169.3, 20, -3.2),
+        ["Dandelion field"] = CFrame.new(-30, 4, 225),
+        ["Bamboo field"] = CFrame.new(93, 20, -25),
+        ["Rose field"] = CFrame.new(-322, 20, 124),
+        ["Cactus field"] = CFrame.new(-194, 68, -107),
+        ["Pumpkin patch"] = CFrame.new(-194, 68, -182),
+        ["Mountain top field"] = CFrame.new(76, 176, -181),
+        ["Pinetree forest"] = CFrame.new(-318, 68, -150),
+        ["Pineapple patch"] = CFrame.new(262, 68, -201),
+        ["Coconut field"] = CFrame.new(-255, 72, 459),
+        ["Pepper patch"] = CFrame.new(-486, 124, 517),
+        ["Stump field"] = CFrame.new(422, 94, -174)
+    }
+
+    function fieldDetectSystem:Start()
+        if self.enabled then return end
+        self.enabled = true
+        self.connection = RunService.Heartbeat:Connect(function()
+            if playerCharacter and humanoidRoot and _G.AutoDetectField then
+                local closest, minDist = nil, math.huge
+                for field, coord in pairs(coordinates) do
+                    local dist = (coord.Position - humanoidRoot.Position).Magnitude
+                    if dist < minDist and dist <= 120 then
+                        minDist, closest = dist, field
+                    end
+                end
+                if closest then
+                    _G.Field = closest
+                    _G.FieldCoord = coordinates[closest]
+                end
+            end
+        end)
+    end
+
+    function fieldDetectSystem:Stop()
+        self.enabled = false
+        if self.connection then
+            self.connection:Disconnect()
+            self.connection = nil
+        end
+    end
+
+    local autoConvertSystem = {
+        enabled = false,
+        connection = nil
+    }
+
+    function autoConvertSystem:Start()
+        if self.enabled then return end
+        self.enabled = true
+        self.connection = RunService.Heartbeat:Connect(function()
+            autoHoneySystem:CheckAndProcess()
+        end)
+    end
+
+    function autoConvertSystem:Stop()
+        self.enabled = false
+        if self.connection then
+            self.connection:Disconnect()
+            self.connection = nil
+        end
+    end
+
+    local TextAnimator = {
+        currentTextIndex = 1,
+        bouncingText = "Release",
+        texts = {
+            "dsc.gg/hydrahub",
+            "youtube.com/@hydra_hub", 
+            "version: 1.0.0 alpha",
+            "Release"
+        },
+        running = true
+    }
+
+    local Destroy = FluentLib.Destroy
+    FluentLib.Destroy = function(...)
+        TextAnimator.running = false
+        return Destroy(...)
+    end
+
+    function TextAnimator:GetCurrentText()
+        return self.bouncingText
+    end
+
+    local WSIZE = isMobile and UDim2.fromOffset(290, 230) or UDim2.fromOffset(580, 460)
+
+    local Window = FluentLib:CreateWindow({
+        Title = "Hydra hub | Release",
+        SubTitle = "",
+        TabWidth = 160,
+        Size = WSIZE,
+        Acrylic = true,
+        Theme = "Dark",
+        MinimizeKey = Enum.KeyCode.Q
+    })
+
+    local Tabs = {
+        Settings = Window:AddTab({ Title = "Settings", Icon = "settings" }),
+        Farming = Window:AddTab({ Title = "Farming", Icon = "sprout" }),
+        Misc = Window:AddTab({ Title = "Misc", Icon = "package" }),
+        ESP = Window:AddTab({ Title = "ESP", Icon = "eye" }),
+        Safety = Window:AddTab({ Title = "Safety", Icon = "shield" }),
+        Bosses = Window:AddTab({ Title = "Bosses", Icon = "crown" }),
+    }
+
+    Window:SelectTab(1)
+    SaveManager:SetLibrary(FluentLib)
+    InterfaceManager:SetLibrary(FluentLib)
+    SaveManager:SetIgnoreIndexes({})
+    InterfaceManager:SetFolder("HydraHub")
+    SaveManager:SetFolder("HydraHub/BeeSwarm")
+    InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+    SaveManager:BuildConfigSection(Tabs.Settings)
+    SaveManager:LoadAutoloadConfig()
+
+    local Toggle = Tabs.Farming:AddToggle("AutoDig", {Title = "Auto dig", Default = false })
+    local digConnection
+    local lastDig = 0
+    local lastToggleTime = 0
+    Toggle:OnChanged(function(Value)
+        local currentTime = tick()
+        if currentTime - lastToggleTime < 0.1 then return end
+        lastToggleTime = currentTime
+        
+        if Value then
+            digConnection = RunService.RenderStepped:Connect(function()
+                local currentTime = tick()
+                if currentTime - lastDig >= 0.5 and playerCharacter and humanoidRoot then
+                    if localPlayer.CoreStats and localPlayer.CoreStats.Pollen and localPlayer.CoreStats.Capacity then
+                        if localPlayer.CoreStats.Pollen.Value < localPlayer.CoreStats.Capacity.Value then
+                            game:GetService("ReplicatedStorage").Events.ToolCollect:FireServer()
+                            
+                            local animator = playerCharacter:FindFirstChild("Humanoid"):FindFirstChild("Animator")
+                            local animation = workspaceService[localPlayer.Name].Animate.toolslash.ToolSlashAnim
+                            if animator and animation then
+                                animator:LoadAnimation(animation):Play()
+                            end
+                            lastDig = currentTime
+                        end
+                    end
+                end
+            end)
+        else
+            if digConnection then
+                digConnection:Disconnect()
+                digConnection = nil
+            end
+        end
+    end)
+
+    local AutoCollectToggle = Tabs.Farming:AddToggle("AutoCollect", {Title = "Auto collect", Default = false})
+    local lastCollectToggleTime = 0
+    AutoCollectToggle:OnChanged(function(Value)
+        local currentTime = tick()
+        if currentTime - lastCollectToggleTime < 0.1 then return end
+        lastCollectToggleTime = currentTime
+        
+        if Value then
+            autoCollectSystem:Start()
+        else
+            autoCollectSystem:Stop()
+        end
+    end)
+
+    local fieldValues = {"Autodetect"}
+    for _, location in ipairs(locations) do
+        table.insert(fieldValues, location)
+    end
+
+    local FieldDropdown = Tabs.Farming:AddDropdown("FieldSelect", {
+        Title = "Field to farm",
+        Values = fieldValues,
+        Multi = false,
+        Default = "Autodetect"
+    })
+    FieldDropdown:OnChanged(function(Value)
+        _G.AutoDetectField = (Value == "Autodetect")
+        if Value == "Autodetect" then
+            fieldDetectSystem:Start()
+        else
+            fieldDetectSystem:Stop()
+            _G.Field = Value
+            _G.FieldCoord = coordinates[Value]
+        end
+    end)
+
+    local AutoConvertToggle = Tabs.Farming:AddToggle("AutoConvert", {Title = "Auto convert when full", Default = false})
+    AutoConvertToggle:OnChanged(function(Value)
+        _G.AutoHoney = Value
+        if Value then
+            autoConvertSystem:Start()
+        else
+            autoConvertSystem:Stop()
+        end
+    end)
+
+    function cloudUtilitySystem:FindCloudInField()
+        if not _G.FieldCoord then return nil end
+        local fieldCenter = _G.FieldCoord.Position
+        
+        local clouds = workspaceService:FindFirstChild("Clouds")
+        if not clouds then return nil end
+        
+        for _, cloud in pairs(clouds:GetChildren()) do
+            if cloud.Name == "CloudInstance" and cloud:FindFirstChild("Plane") then
+                local cloudPos = cloud.Plane.Position
+                local distSq = (cloudPos.X - fieldCenter.X)^2 + (cloudPos.Z - fieldCenter.Z)^2
+                if distSq <= 3600 then
+                    return cloud.Plane
+                end
+            end
+        end
+        return nil
+    end
+
+    function cloudUtilitySystem:IsUnderCloud(cloudPlane)
+        if not humanoidRoot or not cloudPlane then return false end
+        local playerPos = humanoidRoot.Position
+        local cloudPos = cloudPlane.Position
+        local cloudSize = cloudPlane.Size
+        
+        local xDiff = math.abs(playerPos.X - cloudPos.X)
+        local zDiff = math.abs(playerPos.Z - cloudPos.Z)
+        local yDiff = cloudPos.Y - playerPos.Y
+        
+        return xDiff <= cloudSize.X/2 and zDiff <= cloudSize.Z/2 and yDiff > 0 and yDiff < 50
+    end
+
+    function cloudUtilitySystem:GetCloudTarget()
+        if not self.enabled then return nil end
+        
+        local cloudPlane = self:FindCloudInField()
+        if not cloudPlane then return nil end
+        
+        self.isUnderCloud = self:IsUnderCloud(cloudPlane)
+        
+        if self.isUnderCloud then
+            self.underCloudTime = math.min(4, self.underCloudTime + 0.1)
+        else
+            self.underCloudTime = math.max(0, self.underCloudTime - 0.1)
+        end
+        
+        if self.underCloudTime >= 3 and self.isUnderCloud then
+            return nil
+        elseif self.underCloudTime <= 1 and not self.isUnderCloud then
+            return Vector3.new(cloudPlane.Position.X, cloudPlane.Position.Y - 10, cloudPlane.Position.Z)
+        end
+        
+        return nil
+    end
+
+    function cloudUtilitySystem:Start()
+        if self.enabled then return end
+        self.enabled = true
+    end
+
+    function cloudUtilitySystem:Stop()
+        self.enabled = false
+        self.underCloudTime = 0
+        self.isUnderCloud = false
+    end
+
+    function bubbleUtilitySystem:FindBubbleInField()
+        if not _G.FieldCoord then return nil end
+        local fieldCenter = _G.FieldCoord.Position
+        
+        local particles = workspaceService:FindFirstChild("Particles")
+        if not particles then return nil end
+        
+        for _, bubble in pairs(particles:GetChildren()) do
+            if bubble.Name == "Bubble" and bubble:IsA("BasePart") then
+                local bubblePos = bubble.Position
+                local distSq = (bubblePos.X - fieldCenter.X)^2 + (bubblePos.Z - fieldCenter.Z)^2
+                if distSq <= 2500 then
+                    local bubbleId = string.format("%.2f_%.2f_%.2f", bubblePos.X, bubblePos.Y, bubblePos.Z)
+                    if not self.visitedBubbles[bubbleId] then
+                        return bubble
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+    function bubbleUtilitySystem:GetBubbleTarget()
+        if not self.enabled then return nil end
+        
+        local bubble = self:FindBubbleInField()
+        if bubble then
+            local bubblePos = bubble.Position
+            local bubbleId = string.format("%.2f_%.2f_%.2f", bubblePos.X, bubblePos.Y, bubblePos.Z)
+            self.visitedBubbles[bubbleId] = true
+            return bubblePos
+        end
+        
+        return nil
+    end
+
+    function bubbleUtilitySystem:Start()
+        if self.enabled then return end
+        self.enabled = true
+    end
+
+    function bubbleUtilitySystem:Stop()
+        self.enabled = false
+        self.visitedBubbles = {}
+    end
+
+    function balloonUtilitySystem:FindBalloonInField()
+        if not _G.FieldCoord then return nil end
+        local fieldCenter = _G.FieldCoord.Position
+        
+        local balloons = workspaceService:FindFirstChild("Balloons")
+        if not balloons then return nil end
+        
+        local fieldBalloons = balloons:FindFirstChild("FieldBalloons")
+        if not fieldBalloons then return nil end
+        
+        for _, balloon in pairs(fieldBalloons:GetChildren()) do
+            if balloon.Name:match("^Balloon%d*$") and balloon:IsA("Model") then
+                local balloonPart = balloon:FindFirstChild("BalloonBody") or balloon:FindFirstChildOfClass("BasePart")
+                if balloonPart then
+                    local balloonPos = balloonPart.Position
+                    local distSq = (balloonPos.X - fieldCenter.X)^2 + (balloonPos.Z - fieldCenter.Z)^2
+                    if distSq <= 2500 then
+                        return balloon
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+    function balloonUtilitySystem:IsUnderBalloon(balloon)
+        if not humanoidRoot or not balloon then return false end
+        local balloonPart = balloon:FindFirstChild("BalloonBody") or balloon:FindFirstChildOfClass("BasePart")
+        if not balloonPart then return false end
+        
+        local playerPos = humanoidRoot.Position
+        local balloonPos = balloonPart.Position
+        
+        local xDiff = math.abs(playerPos.X - balloonPos.X)
+        local zDiff = math.abs(playerPos.Z - balloonPos.Z)
+        local yDiff = balloonPos.Y - playerPos.Y
+        
+        return xDiff <= 15 and zDiff <= 15 and yDiff > 0 and yDiff < 50
+    end
+
+    function balloonUtilitySystem:GetBalloonTarget()
+        if not self.enabled then return nil end
+        
+        local currentTime = tick()
+        local balloon = self:FindBalloonInField()
+        
+        if not balloon then
+            self.currentBalloon = nil
+            return nil
+        end
+        
+        self.currentBalloon = balloon
+        local isUnder = self:IsUnderBalloon(balloon)
+        
+        if isUnder then
+            self.underBalloonTime = self.underBalloonTime + 0.1
+        else
+            self.underBalloonTime = 0
+        end
+        
+        if currentTime - self.lastTokenCheck > 3 then
+            self.lastTokenCheck = currentTime
+            local priorityToken = autoCollectSystem:CheckPriorityToken()
+            if priorityToken then
+                return priorityToken
+            end
+        end
+        
+        if self.underBalloonTime < 1 or not isUnder then
+            local balloonPart = balloon:FindFirstChild("BalloonBody") or balloon:FindFirstChildOfClass("BasePart")
+            if balloonPart then
+                return Vector3.new(balloonPart.Position.X, balloonPart.Position.Y - 10, balloonPart.Position.Z)
+            end
+        end
+        
+        return nil
+    end
+
+    function balloonUtilitySystem:Start()
+        if self.enabled then return end
+        self.enabled = true
+        self.underBalloonTime = 0
+        self.lastTokenCheck = 0
+    end
+
+    function balloonUtilitySystem:Stop()
+        self.enabled = false
+        self.currentBalloon = nil
+        self.underBalloonTime = 0
+        self.lastTokenCheck = 0
+    end
+
+    local FarmingUtilitiesDropdown = Tabs.Farming:AddDropdown("FarmingUtilities", {
+        Title = "Farming utilities",
+        Values = {"Clouds", "Farm bubbles", "Farm under balloons", "Ignore honey tokens"},
+        Multi = true,
+        Default = {}
+    })
+    FarmingUtilitiesDropdown:OnChanged(function(Value)
+        if Value["Clouds"] then
+            cloudUtilitySystem:Start()
+        else
+            cloudUtilitySystem:Stop()
+        end
+        
+        if Value["Farm bubbles"] then
+            bubbleUtilitySystem:Start()
+        else
+            bubbleUtilitySystem:Stop()
+        end
+        
+        if Value["Farm under balloons"] then
+            balloonUtilitySystem:Start()
+        else
+            balloonUtilitySystem:Stop()
+        end
+        
+        _G.IgnoreHoneyTokens = Value["Ignore honey tokens"] or false
+    end)
+
+    fieldDetectSystem:Start()
+    
+    local Toggle = Tabs.Safety:AddToggle("LegitAFK", {Title = "Disable all unsafe AFK boss locations", Default = true })
+    Tabs.Safety:AddParagraph({
+        Title = "Note",
+        Content = "If enabled, may work badly than disabled mode,\nbecause it's legit and less risky."
+    })
+
+    Toggle:OnChanged(function(Value)
+        _G.SafeAFK = Value
+    end)
+    
+    Tabs.Safety:AddSection("Autofarm", "refresh-cw")
+
+
+
+    Tabs.Misc:AddButton({
+        Title = "Collect hidden stickers",
+        Callback = function()
+            local stickers = workspaceService:FindFirstChild("HiddenStickers")
+            
+            if not stickers then
+                FluentLib:Notify({
+                    Title = "Stickers",
+                    Content = "Stickers folder not found!",
+                    Duration = 5
+                })
+                return
+            end
+
+            local found = false
+            
+            for _, sticker in ipairs(stickers:GetChildren()) do
+                if sticker:IsA("BasePart") and sticker.Name == "HiddenStickerPart" then
+                    local clickDetector = sticker:FindFirstChild("ClickDetector")
+                    if clickDetector then
+                        fireclickdetector(clickDetector)
+                        found = true
+                        task.wait(0.2)
+                    end
+                end
+            end
+            
+            if not found then
+                FluentLib:Notify({
+                    Title = "Stickers",
+                    Content = "No hidden stickers found!",
+                    Duration = 5
+                })
+            else
+                FluentLib:Notify({
+                    Title = "Stickers",
+                    Content = "Successfully collected stickers!",
+                    Duration = 5
+                })
+            end
+        end
+    })
+    
+    Tabs.Misc:AddButton({
+        Title = "Server hop",
+        Description = "Teleport to random server",
+        Callback = function()
+            TeleportService:Teleport(game.PlaceId, localPlayer)
+        end
+    })
+
+    Tabs.Misc:AddButton({
+        Title = "Redeem all codes",
+        Description = "Redeem all available promocodes",
+        Callback = function()
+            local promoCodes = serverApi.codes
+            
+            local promoEvent = game:GetService("ReplicatedStorage").Events.PromoCodeEvent
+
+            task.spawn(function()
+                for i, code in ipairs(promoCodes) do
+                    pcall(function()
+                        promoEvent:FireServer(code)
+                    end)
+                    task.wait(1)
+                end
+                
+            end)
+        end
+    })
+    
+    local Toggle = Tabs.Misc:AddToggle("WClockUse", {Title = "Wealth Clock auto use", Default = false })
+    local wealthClockLoop
+    Toggle:OnChanged(function(Value)
+        _G.WealthClock = Value
+        if Value then
+            wealthClockLoop = task.spawn(function()
+                while _G.WealthClock do
+                    local Event = game:GetService("ReplicatedStorage").Events.ToyEvent
+                    pcall(function()
+                        Event:FireServer("Wealth Clock")
+                    end)
+                    task.wait(10)
+                end
+            end)
+        else
+            if wealthClockLoop then
+                task.cancel(wealthClockLoop)
+                wealthClockLoop = nil
+            end
+        end
+    end)
+    
+    local Toggle = Tabs.Misc:AddToggle("FFNotify", {Title = "Firefly spawn tracker", Default = true })
+    local SoloNotifFF = 0
+    local lastFireflyField = nil
+    local lastFireflyPos = nil
+    local fireflyStillTime = 0
+    local fireflyNotified = false
+    Toggle:OnChanged(function(Value)
+        _G.FireflyNotify = Value
+        if Value then
+            task.spawn(function()
+                while _G.FireflyNotify do
+                    local NPCBees = workspaceService:FindFirstChild("NPCBees")
+                    if NPCBees then
+                        local firefly = NPCBees:FindFirstChild("Firefly")
+                        if firefly then
+                            local fireflyPos = firefly.Position
+                            
+                            if lastFireflyPos then
+                                local distance = (fireflyPos - lastFireflyPos).Magnitude
+                                if distance < 5 then
+                                    fireflyStillTime = fireflyStillTime + 1
+                                else
+                                    fireflyStillTime = 0
+                                    fireflyNotified = false
+                                end
+                            else
+                                fireflyStillTime = 0
+                            end
+                            
+                            if fireflyStillTime >= 2 and not fireflyNotified then
+                                local closestField = nil
+                                local minDist = math.huge
+                                
+                                for fieldName, coord in pairs(coordinates) do
+                                    local dist = (coord.Position - fireflyPos).Magnitude
+                                    if dist < minDist then
+                                        minDist = dist
+                                        closestField = fieldName
+                                    end
+                                end
+                                
+                                if closestField and closestField ~= lastFireflyField then
+                                    FluentLib:Notify({
+                                        Title = "Tracker",
+                                        Content = "Fireflies landed!\nField: " .. closestField,
+                                        Duration = 10
+                                    })
+                                    lastFireflyField = closestField
+                                    fireflyNotified = true
+                                end
+                            end
+                            
+                            lastFireflyPos = fireflyPos
+                        else
+                            SoloNotifFF = 0
+                            lastFireflyField = nil
+                            lastFireflyPos = nil
+                            fireflyStillTime = 0
+                            fireflyNotified = false
+                        end
+                    end
+                    task.wait(1)
+                end
+            end)
+        end
+    end)
+
+    local Toggle = Tabs.Misc:AddToggle("ViciousNotify", {
+        Title = "Vicious Bee spawn tracker", 
+        Default = true
+    })
+    Toggle:OnChanged(function(Value)
+        if Value then
+            workspaceService.Monsters.ChildAdded:Connect(function(child)
+                if string.find(child.Name, "Vicious Bee") then
+                    local VicLvl = tonumber(child.Name:match("%d+"))
+                    local vicPos = nil
+                    
+                    if child:FindFirstChild("HumanoidRootPart") then
+                        vicPos = child.HumanoidRootPart.Position
+                    elseif child.PrimaryPart then
+                        vicPos = child.PrimaryPart.Position
+                    elseif child:FindFirstChildOfClass("BasePart") then
+                        vicPos = child:FindFirstChildOfClass("BasePart").Position
+                    end
+                    
+                    if vicPos then
+                        local closestField = nil
+                        local minDist = math.huge
+                        
+                        for fieldName, coord in pairs(coordinates) do
+                            local dist = (coord.Position - vicPos).Magnitude
+                            if dist < minDist then
+                                minDist = dist
+                                closestField = fieldName
+                            end
+                        end
+                        
+                        FluentLib:Notify({
+                            Title = "Tracker",
+                            Content = "Vicious Bee has been spotted!\nLevel: " .. VicLvl .. "\nField: " .. (closestField or "Unknown"),
+                            Duration = 5
+                        })
+                    end
+                end
+            end)
+        end
+    end)
+
+    local Toggle = Tabs.Misc:AddToggle("WindyNotify", {Title = "Windy Bee spawn tracker", Default = true })
+    Toggle:OnChanged(function(Value)
+        if Value then
+            workspaceService.NPCBees.ChildAdded:Connect(function(child)
+                if child.Name == "Windy" then
+                    FluentLib:Notify({
+                        Title = "Tracker", 
+                        Content = "Windy Bee has been spotted!",
+                        Duration = 15
+                    })
+                end
+            end)
+        end
+    end)
+    
+    local MultiDropdown = Tabs.Misc:AddDropdown("MultiDropdown", {
+        Title = "Item stealer",
+        Description = "❗ Fast tween to item through walls",
+        Values = {"Star Jelly", "Mythic Egg", "Diamond Egg", "Epic Egg", "Silver Egg", "Star Treat"},
+        Multi = true,
+        Default = {}
+    })
+    
+    local itemStealerConnection
+    local StolenItem = nil
+    local notifiedItems = {}
+    local TweenService = game:GetService("TweenService")
+    local isMovingToItem = false
+    
+    function StealNotify()
+        if not notifiedItems[StolenItem] then
+            FluentLib:Notify({
+                Title = "Item Stealer",
+                Content = "Item successfully been stolen!\nItem: " .. StolenItem,
+                Duration = 15
+            })
+            if StolenItem then
+                notifiedItems[StolenItem] = true
+            end
+        end
+    end
+
+    MultiDropdown:OnChanged(function(Value)
+        if next(Value) then
+            if not itemStealerConnection then
+                local textureMap = {
+                    ["Star Jelly"] = "rbxassetid://2319943273",
+                    ["Mythic Egg"] = "rbxassetid://4520739302",
+                    ["Star Treat"] = "rbxassetid://2028603146",
+                    ["Diamond Egg"] = "rbxassetid://1471850677",
+                    ["Golden Egg"] = "rbxassetid://1471849394",
+                    ["Silver Egg"] = "rbxassetid://1471848094"
+                }
+                itemStealerConnection = RunService.RenderStepped:Connect(function()
+                    if not humanoidRoot or isMovingToItem then return end
+                    --[[
+                    for _, item in ipairs(workspaceService.Collectibles:GetChildren()) do
+                        if item.Transparency == 0 then
+                            local decal = item:FindFirstChild("FrontDecal")
+                            if decal and decal.Texture then
+                                for itemName, textureId in next, textureMap do
+                                    if Value[itemName] and decal.Texture == textureId then
+                                        isMovingToItem = true
+                                        local originalPos = humanoidRoot.Position
+                                        StolenItem = itemName
+                                        
+                                        task.spawn(function()
+                                            local originalCanCollide = {}
+                                            for _, part in pairs(playerCharacter:GetChildren()) do
+                                                if part:IsA("BasePart") then
+                                                    originalCanCollide[part] = part.CanCollide
+                                                    part.CanCollide = false
+                                                end
+                                            end
+                                            
+                                            local targetPos = item.Position + Vector3.new(0, 2, 0)
+                                            local distance = (targetPos - originalPos).Magnitude
+                                            local speed = 50
+                                            local duration = math.max(0.5, distance / speed)
+                                            
+                                            local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                                            local tween = TweenService:Create(humanoidRoot, tweenInfo, {Position = targetPos})
+                                            
+                                            tween:Play()
+                                            tween.Completed:Wait()
+                                            
+                                            task.wait(0.2)
+                                            StealNotify()
+                                            
+                                            local returnDistance = (originalPos - humanoidRoot.Position).Magnitude
+                                            local returnDuration = math.max(0.5, returnDistance / speed)
+                                            local returnTweenInfo = TweenInfo.new(returnDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                                            local returnTween = TweenService:Create(humanoidRoot, returnTweenInfo, {Position = originalPos})
+                                            
+                                            returnTween:Play()
+                                            returnTween.Completed:Wait()
+                                            
+                                            task.wait(0.1)
+                                            
+                                            for part, canCollide in pairs(originalCanCollide) do
+                                                if part and part.Parent and part.Parent == playerCharacter then
+                                                    part.CanCollide = canCollide
+                                                end
+                                            end
+                                            
+                                            humanoidRoot.Anchored = false
+                                            playerCharacter.Humanoid.PlatformStand = false
+                                            
+                                            isMovingToItem = false
+                                        end)
+                                        return
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    ]]--
+                end)
+            end
+        else
+            if itemStealerConnection then
+                itemStealerConnection:Disconnect()
+                itemStealerConnection = nil
+            end
+        end
+    end)
+    
+    Tabs.Bosses:AddSection("Mondo Chick", "clock")
+    local MondoLabel = Tabs.Bosses:AddParagraph({
+        Title = "Mondo Chick spawn timer",
+        Content = "Mondo Chick is ready!"
+    })
+    local mondoSpawned = 0
+    task.spawn(function()
+        while task.wait(5) do
+            local clockLabel = workspaceService:FindFirstChild("Clock") and 
+                            workspaceService.Clock:FindFirstChild("SurfaceGui") and 
+                            workspaceService.Clock.SurfaceGui:FindFirstChild("TextLabel")
+            
+            if clockLabel and clockLabel.Text then
+                local text = clockLabel.Text
+                
+                if text:match("! ! !") then
+                    mondoSpawned = mondoSpawned + 1
+                    if mondoSpawned == 1 then
+                        if _G.MondoNotify == true then
+                            FluentLib:Notify({
+                                Title = "Boss tracker",
+                                Content = "Mondo Chick is ready!",
+                                Duration = 5
+                            })
+                            MondoLabel:SetDesc("Mondo Chick is ready!")
+                        end
+                    end
+                elseif text:match("Mondo Chick") then
+                    mondoSpawned = 0
+                    local timeLeft = text:match("(%d+:%d+)") or text:match("(%d+s)")
+                    if timeLeft then
+                        MondoLabel:SetDesc("Mondo Chick respawning in " .. timeLeft)
+                        _G.MondoTime = timeLeft
+                    else
+                        local fullTime = text:match("Mondo Chick: (.+)")
+                        if fullTime then
+                            MondoLabel:SetDesc("Mondo Chick respawning in " .. fullTime)
+                            _G.MondoTime = fullTime
+                        end
+                    end
+                else
+                    MondoLabel:SetDesc("Loading tracker...")
+                end
+            end
+        end
+    end)
+    
+    local Toggle = Tabs.Bosses:AddToggle("MondoNotify", {Title = "Mondo Chick spawn tracker", Default = true })
+    Toggle:OnChanged(function(Value)
+        _G.MondoNotify = Value
+    end)
+    
+    Tabs.Bosses:AddButton({
+        Title = "Go to AFK location",
+        Description = nil,
+        Callback = function()
+            if _G.SafeAFK == true and humanoidRoot then
+                playerCharacter.Humanoid:MoveTo(Vector3.new(12, 206, -159))
+                FluentLib:Notify({
+                    Title = "AFK location",
+                    Content = "Safe mode enabled, moving to safe location.",
+                    Duration = 5
+                })
+            else
+                local block = Instance.new("Part")
+                block.Size = Vector3.new(10, 1, 10)
+                block.Position = Vector3.new(78, 219.25, -170)
+                block.Anchored = true
+                block.CanCollide = true
+                block.Transparency = 1
+                block.Parent = workspaceService
+                playerCharacter.Humanoid:MoveTo(Vector3.new(78, 220.25, -170))
+            end
+        end
+    })
+    
+    Tabs.Bosses:AddSection("Commando Chick", "target")
+    local CommandoLabel = Tabs.Bosses:AddParagraph({
+        Title = "Commando Chick spawn timer",
+        Content = "Commando Chick is ready!"
+    })
+    local comSpawned = 0
+    task.spawn(function()
+        while task.wait(3) do
+            local commandoTimer = workspaceService.MonsterSpawners["Commando Chick"].TimerAttachment.TimerGui.TimerLabel
+
+            if commandoTimer then
+                local text = commandoTimer.Text
+                if text == "1:00" then
+                    CommandoLabel:SetDesc("Commando Chick is ready!")
+                    comSpawned = comSpawned + 1
+                    if comSpawned == 1 then
+                        if _G.CommandoNotify then
+                            FluentLib:Notify({
+                                Title = "Boss tracker",
+                                Content = "Commando Chick is ready!",
+                                Duration = 5
+                            })
+                        end
+                    end
+                else
+                    local time = text:match("Commando Chick: (.+)")
+                    if time then
+                        CommandoLabel:SetDesc("Commando Chick respawning in " .. time)
+                        comSpawned = 0
+                    end
+                end
+            end
+        end
+    end)
+    
+    local Toggle = Tabs.Bosses:AddToggle("CommandoNotify", {Title = "Commando Chick spawn tracker", Default = false })
+    Toggle:OnChanged(function(Value)
+        _G.CommandoNotify = Value
+    end)
+    
+    Tabs.Bosses:AddButton({
+        Title = "Go to AFK location",
+        Callback = function()
+            if _G.SafeAFK == true and humanoidRoot then
+                playerCharacter.Humanoid:MoveTo(Vector3.new(475, 50, 165))
+                FluentLib:Notify({
+                    Title = "AFK location",
+                    Content = "Safe mode enabled, moving to safe location.",
+                    Duration = 5
+                })
+            else
+                local block = Instance.new("Part")
+                block.Size = Vector3.new(10, 1, 10)
+                block.Position = Vector3.new(521, 64, 165)
+                block.Anchored = true
+                block.CanCollide = true
+                block.Transparency = 1
+                block.Parent = workspaceService
+                playerCharacter.Humanoid:MoveTo(Vector3.new(521, 65, 165))
+            end
+        end
+    })
+    
+    Tabs.Bosses:AddSection("Coconut Crab", "waves")
+    local cocoSpawn = 0
+    local CoconutLabel = Tabs.Bosses:AddParagraph({
+        Title = "Coconut Crab spawn timer",
+        Content = "Coconut Crab is ready!"
+    })
+    
+    task.spawn(function()
+        while task.wait(3) do
+            local coconutTimer = workspaceService.MonsterSpawners.CoconutCrab.TimerAttachment.TimerGui.TimerLabel
+            if coconutTimer then
+                local text = coconutTimer.Text
+                local hours, minutes, seconds = text:match("(%d+):(%d+):(%d+)")
+                
+                if text == "1:00" then
+                    if cocoSpawn == 0 then
+                        cocoSpawn = 1
+                        CoconutLabel:SetDesc("Coconut Crab is ready!")
+                        if _G.CoconutNotify then
+                            FluentLib:Notify({
+                                Title = "Boss tracker", 
+                                Content = "Coconut Crab is ready!",
+                                Duration = 5
+                            })
+                        end
+                    end
+                elseif hours and minutes and seconds then
+                    CoconutLabel:SetDesc(string.format("Coconut Crab respawning in %s:%s:%s", hours, minutes, seconds))
+                    cocoSpawn = 0
+                end
+            end
+        end
+    end)
+    
+    local Toggle = Tabs.Bosses:AddToggle("CoconutNotify", {Title = "Coconut Crab spawn tracker", Default = true })
+    Toggle:OnChanged(function(Value)
+        _G.CoconutNotify = Value
+    end)
+    
+    Tabs.Bosses:AddButton({
+        Title = "Go to AFK location",
+        Callback = function()
+            if _G.SafeAFK == true and humanoidRoot then
+                local block = Instance.new("Part")
+                block.Size = Vector3.new(10, 1, 10)
+                block.Position = Vector3.new(-258.1, 110, 490.9)
+                block.Anchored = true
+                block.CanCollide = true
+                block.Transparency = 1
+                block.Parent = workspaceService
+                playerCharacter.Humanoid:MoveTo(Vector3.new(-258.1, 110, 490.9))
+                FluentLib:Notify({
+                    Title = "AFK location",
+                    Content = "Safe mode enabled, moving to safe location.",
+                    Duration = 5
+                })
+            else
+                local block = Instance.new("Part")
+                block.Size = Vector3.new(10, 1, 10)
+                block.Position = Vector3.new(-258.1, 110, 490.9)
+                block.Anchored = true
+                block.CanCollide = true
+                block.Transparency = 1
+                block.Parent = workspaceService
+                playerCharacter.Humanoid:MoveTo(Vector3.new(-258.1, 110, 490.9))
+            end
+        end
+    })
+
+    Tabs.Bosses:AddSection("Tunnel Bear", "mountain")
+    local TunnelLabel = Tabs.Bosses:AddParagraph({
+        Title = "Tunnel Bear Spawn Timer",
+        Content = "Tunnel Bear is ready!"
+    })
+    local lastTunnelTime = ""
+    local tunnelSpawn = 0
+    task.spawn(function()
+        while task.wait(3) do
+            local tunnelTimer = workspaceService.MonsterSpawners.TunnelBear.TimerAttachment.TimerGui.TimerLabel
+            
+            if tunnelTimer then
+                local currentTime = tunnelTimer.Text
+                
+                if currentTime == lastTunnelTime then
+                    if not currentTime:match("Tunnel Bear") then
+                        if tunnelSpawn == 0 then
+                            tunnelSpawn = 1
+                            TunnelLabel:SetDesc("Tunnel Bear is ready!")
+                            if _G.TunnelNotify then
+                                FluentLib:Notify({
+                                    Title = "Boss Tracker",
+                                    Content = "Tunnel Bear is ready!",
+                                    Duration = 5
+                                })
+                            end
+                        end
+                    else
+                        tunnelSpawn = 0
+                        local timeString = currentTime:match("Tunnel Bear: (.+)")
+                        if timeString then
+                            TunnelLabel:SetDesc("Tunnel Bear respawning in " .. timeString)
+                        end
+                    end
+                end
+                
+                lastTunnelTime = currentTime
+            end
+        end
+    end)
+
+    local Toggle = Tabs.Bosses:AddToggle("TunnelNotify", {Title = "Tunnel Bear spawn tracker", Default = true })
+    Toggle:OnChanged(function(Value)
+        _G.TunnelNotify = Value
+    end)
+    
+    Tabs.Bosses:AddButton({
+        Title = "Go to location",
+        Callback = function()
+            if humanoidRoot then
+                playerCharacter.Humanoid:MoveTo(Vector3.new(507.3, 5.7, -45.7))
+            end
+        end
+    })
+    
+    Tabs.Bosses:AddSection("King Beetle", "bug")
+
+    local BeetleLabel = Tabs.Bosses:AddParagraph({
+        Title = "King Beetle Spawn Timer",
+        Content = "King Beetle is ready!"
+    })
+
+    local lastBeetleTime = ""
+    local beetleSpawned = false
+
+    task.spawn(function()
+        while task.wait(3) do
+            local beetleTimer = workspaceService.MonsterSpawners["King Beetle Cave"].Attachment.TimerGui.TimerLabel
+            
+            if beetleTimer then
+                local currentTime = beetleTimer.Text
+                
+                if currentTime ~= lastBeetleTime then
+                    lastBeetleTime = currentTime
+                    
+                    if currentTime == "King Beetle: 1s" and not beetleSpawned then
+                        beetleSpawned = true
+                        BeetleLabel:SetDesc("King Beetle is ready!")
+                        
+                        if _G.BeetleNotify then
+                            FluentLib:Notify({
+                                Title = "Boss Tracker",
+                                Content = "King Beetle is ready!",
+                                Duration = 5
+                            })
+                        end
+                    elseif currentTime:match("King Beetle:") and currentTime ~= "King Beetle: 1s" then
+                        beetleSpawned = false
+                        local h, m, s = currentTime:match("King Beetle: (%d+):(%d+):(%d+)")
+                        if h and m and s then
+                            BeetleLabel:SetDesc(string.format("King Beetle respawning in %s:%s:%s", h, m, s))
+                        else
+                            local timeOnly = currentTime:match("King Beetle: (.+)")
+                            if timeOnly then
+                                BeetleLabel:SetDesc("King Beetle respawning in " .. timeOnly)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+
+    local Toggle = Tabs.Bosses:AddToggle("BeetleNotify", {Title = "King Beetle spawn tracker", Default = true })
+    Toggle:OnChanged(function(Value)
+        _G.BeetleNotify = Value
+    end)
+    
+    Tabs.Bosses:AddButton({
+        Title = "Go to location",
+        Callback = function()
+            if humanoidRoot then
+                playerCharacter.Humanoid:MoveTo(Vector3.new(218, 3, 140))
+            end
+        end
+    })
+    
+    local Toggle = Tabs.Misc:AddToggle("AntiAFK", {Title = "Anti AFK", Default = true })
+    local antiAFKConnection
+    Toggle:OnChanged(function(Value)
+        if Value then
+            local VirtualUser = game:GetService("VirtualUser")
+            antiAFKConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        else
+            if antiAFKConnection then
+                antiAFKConnection:Disconnect()
+                antiAFKConnection = nil
+            end
+        end
+    end)
+    
+    local hiveProtectData = {
+        originalHiveText = nil,
+        originalHiveColor = nil,
+        originalPlatformText = nil,
+        originalPlatformColor = nil,
+        playerHive = nil,
+        playerPlatform = nil
+    }
+    
+    local function findPlayerHive()
+        local playerName = localPlayer.Name
+        local honeycombs = workspaceService:FindFirstChild("Honeycombs")
+        if not honeycombs then return nil end
+        
+        for i = 1, 6 do
+            local hive = honeycombs:FindFirstChild("Hive" .. i)
+            if hive then
+                local display = hive:FindFirstChild("Display")
+                if display then
+                    local gui = display:FindFirstChild("Gui")
+                    if gui then
+                        local frame = gui:FindFirstChild("Frame")
+                        if frame then
+                            local ownerName = frame:FindFirstChild("OwnerName")
+                            if ownerName and ownerName.Text == playerName then
+                                return hive
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return nil
+    end
+    
+    local function findPlayerPlatform()
+        local playerName = localPlayer.Name
+        local hivePlatforms = workspaceService:FindFirstChild("HivePlatforms")
+        if not hivePlatforms then return nil end
+        
+        for _, platform in pairs(hivePlatforms:GetChildren()) do
+            if platform.Name:match("Platform") then
+                local circle = platform:FindFirstChild("Circle")
+                if circle then
+                    local surfaceGui = circle:FindFirstChild("SurfaceGui")
+                    if surfaceGui then
+                        local textLabel = surfaceGui:FindFirstChild("TextLabel")
+                        if textLabel and textLabel.Text == playerName then
+                            return textLabel
+                        end
+                    end
+                end
+            end
+        end
+        return nil
+    end
+    
+    local Toggle = Tabs.Misc:AddToggle("HiveProtect", {Title = "Hive Protect", Description = "Disable your name from being displayed on the hive", Default = false})
+    Toggle:OnChanged(function(Value)
+        if Value then
+            hiveProtectData.playerHive = findPlayerHive()
+            hiveProtectData.playerPlatform = findPlayerPlatform()
+            
+            if hiveProtectData.playerHive then
+                local ownerName = hiveProtectData.playerHive.Display.Gui.Frame.OwnerName
+                hiveProtectData.originalHiveText = ownerName.Text
+                hiveProtectData.originalHiveColor = ownerName.TextColor3
+                ownerName.Text = "dsc.gg/hydrahub"
+                ownerName.TextColor3 = Color3.new(0, 0, 0)
+            end
+            
+            if hiveProtectData.playerPlatform then
+                hiveProtectData.originalPlatformText = hiveProtectData.playerPlatform.Text
+                hiveProtectData.originalPlatformColor = hiveProtectData.playerPlatform.TextColor3
+                hiveProtectData.playerPlatform.Text = "dsc.gg/hydrahub"
+                hiveProtectData.playerPlatform.TextColor3 = Color3.new(0, 0, 0)
+            end
+        else
+            if hiveProtectData.playerHive and hiveProtectData.originalHiveText then
+                local ownerName = hiveProtectData.playerHive.Display.Gui.Frame.OwnerName
+                ownerName.Text = hiveProtectData.originalHiveText
+                ownerName.TextColor3 = hiveProtectData.originalHiveColor
+            end
+            
+            if hiveProtectData.playerPlatform and hiveProtectData.originalPlatformText then
+                hiveProtectData.playerPlatform.Text = hiveProtectData.originalPlatformText
+                hiveProtectData.playerPlatform.TextColor3 = hiveProtectData.originalPlatformColor
+            end
+            
+            hiveProtectData.originalHiveText = nil
+            hiveProtectData.originalHiveColor = nil
+            hiveProtectData.originalPlatformText = nil
+            hiveProtectData.originalPlatformColor = nil
+            hiveProtectData.playerHive = nil
+            hiveProtectData.playerPlatform = nil
+        end
+    end)
+
+    local badges = {
+        "Honey", "Quest", "Battle", "Ability", "Goo", "Playtime", "Sticker Stack",
+        "Sunflower", "Dandelion", "Mushroom", "Blue Flower", "Clover", "Spider",
+        "Strawberry", "Bamboo", "Pineapple", "Pumpkin", "Cactus", "Rose", "Pine Tree",
+        "Stump", "Coconut", "Pepper", "Hive Hub", "Mountain Top"
+    }
+    
+    local badgeEvent = game:GetService("ReplicatedStorage").Events.BadgeEvent
+    local badgeCollectorLoop
+    
+    local Toggle = Tabs.Misc:AddToggle("AutoBadges", {Title = "Auto collect badges", Description = "Automatically collect all badges", Default = false})
+    Toggle:OnChanged(function(Value)
+        _G.AutoCollectBadges = Value
+        if Value then
+            badgeCollectorLoop = task.spawn(function()
+                while _G.AutoCollectBadges do
+                    for _, badgeName in pairs(badges) do
+                        if _G.AutoCollectBadges then
+                            pcall(function()
+                                badgeEvent:FireServer("Collect", badgeName)
+                            end)
+                            task.wait(1)
+                        else
+                            break
+                        end
+                    end
+                    task.wait(1)
+                end
+            end)
+        else
+            if badgeCollectorLoop then
+                task.cancel(badgeCollectorLoop)
+                badgeCollectorLoop = nil
+            end
+        end
+    end)
+    
+elseif game.PlaceId == 1537690962 and currentVersion ~= '1.0' then
+    local function showNotification(message)
+        local notificationGui = Instance.new("ScreenGui")
+        notificationGui.Name = "HydraNotification"
+        notificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        notificationGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+        local notificationFrame = Instance.new("Frame")
+        notificationFrame.Size = UDim2.new(0, 250, 0, 45)
+        notificationFrame.Position = UDim2.new(0.5, -125, 0.5, 50)
+        notificationFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        notificationFrame.BorderSizePixel = 1
+        notificationFrame.BorderColor3 = Color3.fromRGB(70, 70, 70)
+        notificationFrame.BackgroundTransparency = 1
+        notificationFrame.Parent = notificationGui
+        local frameCorner = Instance.new("UICorner")
+        frameCorner.CornerRadius = UDim.new(0, 6)
+        frameCorner.Parent = notificationFrame
+        local frameShadow = Instance.new("ImageLabel")
+        frameShadow.Size = UDim2.new(1, 20, 1, 20)
+        frameShadow.Position = UDim2.new(0, -10, 0, -10)
+        frameShadow.Image = "rbxasset://textures/ui/Controls/DropShadow/DropShadow.png"
+        frameShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        frameShadow.ImageTransparency = 1
+        frameShadow.ScaleType = Enum.ScaleType.Slice
+        frameShadow.SliceCenter = Rect.new(12, 12, 276, 276)
+        frameShadow.BackgroundTransparency = 1
+        frameShadow.ZIndex = notificationFrame.ZIndex - 1
+        frameShadow.Parent = notificationFrame
+        local frameText = Instance.new("TextLabel")
+        frameText.Size = UDim2.new(1, -12, 1, 0)
+        frameText.Position = UDim2.new(0, 6, 0, 0)
+        frameText.Text = message
+        frameText.TextColor3 = Color3.fromRGB(220, 220, 220)
+        frameText.TextSize = 15
+        frameText.Font = Enum.Font.Arimo
+        frameText.BackgroundTransparency = 1
+        frameText.TextTransparency = 1
+        frameText.Parent = notificationFrame
+        game:GetService("TweenService"):Create(notificationFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
+        game:GetService("TweenService"):Create(frameText, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+        game:GetService("TweenService"):Create(frameShadow, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
+        task.wait(2.5)
+        game:GetService("TweenService"):Create(notificationFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
+        game:GetService("TweenService"):Create(frameText, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
+        local fadeOutTween = game:GetService("TweenService"):Create(frameShadow, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {ImageTransparency = 1})
+        fadeOutTween:Play()
+        fadeOutTween.Completed:Connect(function()
+            notificationGui:Destroy()
+        end)
+    end
+    showNotification("HYDRA HUB: Outdated version!")
+elseif game.PlaceId ~= 1537690962 then
+    local function showNotification(message)
+        local notificationGui = Instance.new("ScreenGui")
+        notificationGui.Name = "HydraNotification"
+        notificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        notificationGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+        local notificationFrame = Instance.new("Frame")
+        notificationFrame.Size = UDim2.new(0, 250, 0, 45)
+        notificationFrame.Position = UDim2.new(0.5, -125, 0.5, 50)
+        notificationFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        notificationFrame.BorderSizePixel = 1
+        notificationFrame.BorderColor3 = Color3.fromRGB(70, 70, 70)
+        notificationFrame.BackgroundTransparency = 1
+        notificationFrame.Parent = notificationGui
+        local frameCorner = Instance.new("UICorner")
+        frameCorner.CornerRadius = UDim.new(0, 6)
+        frameCorner.Parent = notificationFrame
+        local frameShadow = Instance.new("ImageLabel")
+        frameShadow.Size = UDim2.new(1, 20, 1, 20)
+        frameShadow.Position = UDim2.new(0, -10, 0, -10)
+        frameShadow.Image = "rbxasset://textures/ui/Controls/DropShadow/DropShadow.png"
+        frameShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        frameShadow.ImageTransparency = 1
+        frameShadow.ScaleType = Enum.ScaleType.Slice
+        frameShadow.SliceCenter = Rect.new(12, 12, 276, 276)
+        frameShadow.BackgroundTransparency = 1
+        frameShadow.ZIndex = notificationFrame.ZIndex - 1
+        frameShadow.Parent = notificationFrame
+        local frameText = Instance.new("TextLabel")
+        frameText.Size = UDim2.new(1, -12, 1, 0)
+        frameText.Position = UDim2.new(0, 6, 0, 0)
+        frameText.Text = message
+        frameText.TextColor3 = Color3.fromRGB(220, 220, 220)
+        frameText.TextSize = 15
+        frameText.Font = Enum.Font.Arimo
+        frameText.BackgroundTransparency = 1
+        frameText.TextTransparency = 1
+        frameText.Parent = notificationFrame
+        game:GetService("TweenService"):Create(notificationFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
+        game:GetService("TweenService"):Create(frameText, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+        game:GetService("TweenService"):Create(frameShadow, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
+        task.wait(2.5)
+        game:GetService("TweenService"):Create(notificationFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
+        game:GetService("TweenService"):Create(frameText, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
+        local fadeOutTween = game:GetService("TweenService"):Create(frameShadow, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {ImageTransparency = 1})
+        fadeOutTween:Play()
+        fadeOutTween.Completed:Connect(function()
+            notificationGui:Destroy()
+        end)
+    end
+
+    showNotification("Not in BSS!")
+end
