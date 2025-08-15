@@ -4,7 +4,9 @@ local scriptMappings = {
     [88728793053496] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/car.lua",
     [101949297449238] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/Island.lua",
     [112279762578792] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/mine.lua",
+    [129827112113663] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/pro.lua",
 }
+
 
 
 local currentId = game.PlaceId
