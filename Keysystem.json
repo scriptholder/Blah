@@ -13,7 +13,7 @@
       "durationDays": 30
     },
     "testing": {
-      "durationMs": 600000,
+      "durationMS": 600000,
       "createdAt": 1755363099518,
       "hwid": null
     }
