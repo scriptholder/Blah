@@ -11,6 +11,11 @@
     },
     "alexis": {
       "durationDays": 30
+    },
+    "monkeys": {
+      "durationDays": 10,
+      "createdAt": 1755361178742,
+      "hwid": null
     }
   }
 }
