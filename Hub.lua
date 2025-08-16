@@ -5,6 +5,7 @@ local scriptMappings = {
     [101949297449238] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/Island.lua",
     [112279762578792] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/mine.lua",
     [129827112113663] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/pro.lua",
+    [98632918083844] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/factory.lua",
 }
 
 
