@@ -11,11 +11,6 @@
     },
     "alexis": {
       "durationDays": 30
-    },
-    "testing": {
-      "durationMS": 600000,
-      "createdAt": 1755363099518,
-      "hwid": null
     }
   }
 }
