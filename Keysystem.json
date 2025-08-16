@@ -2,7 +2,7 @@
   "freeKey": "Update",
   "premiumKeys": {
     "VIP": {
-      "durationDays": 30,
+      "durationMS": 30,
       "hwid": "2cedc79e-9c6d-4708-bb2a-22688a0b7ccd"
     },
     "ghost": {
