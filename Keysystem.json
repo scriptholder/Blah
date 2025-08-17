@@ -4,7 +4,9 @@
     "VIP": {
       "durationMS": 31536000000,
       "createdAt": 1755409771661,
-      "hwid": "2cedc79e-9c6d-4708-bb2a-22688a0b7ccd"
+      "hwid": [
+        "2cedc79e-9c6d-4708-bb2a-22688a0b7ccd"
+      ]
     },
     "ghost": {
       "durationMS": 604800000,
