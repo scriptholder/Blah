@@ -1,4 +1,6 @@
 --// Fluent Plus UI (clean port) — All automation features wired to toggles/sliders. No settings, no saves, no watermark.
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 -- UI
 local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/discoart/FluentPlus/refs/heads/main/alpha.lua"))()
@@ -18,6 +20,7 @@ local Essentials = Window:AddTab({ Title = "Essentials", Icon = "wrench" })
 local Tools      = Window:AddTab({ Title = "Tools",      Icon = "hammer" })
 local AutoEvents = Window:AddTab({ Title = "Auto Events",Icon = "calendar" })
 local Upgrades   = Window:AddTab({ Title = "Upgrades",   Icon = "trending-up" })
+local Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 
 -- Services / Globals
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -766,3 +769,23 @@ Upgrades:AddToggle("autoFishCrateCapacityEnabled",{
         if v then startAutoFishCrateCapacity() end
     end
 })
+
+
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+InterfaceManager:SetFolder("DeadScriptHub")
+SaveManager:SetFolder("DeadScriptHub/island")
+InterfaceManager:BuildInterfaceSection(Settings)
+SaveManager:BuildConfigSection(Settings)
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "Build An Island",
+    Content = "Script loaded and ready.",
+    Duration = 8,
+})
+
+SaveManager:LoadAutoloadConfig()
