@@ -10,6 +10,11 @@
       "durationMS": 604800000,
       "createdAt": 1755409790126,
       "hwid": null
+    },
+    "alexis": {
+      "durationMS": 864000000,
+      "createdAt": 1755409802835,
+      "hwid": null
     }
   }
 }
