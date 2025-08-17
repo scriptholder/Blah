@@ -5,6 +5,11 @@
       "durationMS": 31536000000,
       "createdAt": 1755409771661,
       "hwid": null
+    },
+    "ghost": {
+      "durationMS": 604800000,
+      "createdAt": 1755409790126,
+      "hwid": null
     }
   }
 }
