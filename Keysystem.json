@@ -1,6 +1,10 @@
 {
   "freeKey": "Update",
   "premiumKeys": {
-
+    "VIP": {
+      "durationMS": 31536000000,
+      "createdAt": 1755409771661,
+      "hwid": null
+    }
   }
 }
