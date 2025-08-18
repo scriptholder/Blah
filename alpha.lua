@@ -6846,13 +6846,13 @@ local MinimizeButton = New("TextButton", {
     New("UIPadding", {
         PaddingBottom = UDim.new(0, 2),
         PaddingLeft = UDim.new(0, 2),
-        PaddingRight = UDim.new(0, 2),
+        PaddingRight = UDim.new(0, 3),
         PaddingTop = UDim.new(0, 2),
     }),
     New("ImageLabel", {
         Image = chosenIcon,
         BackgroundTransparency = 1,
-        Size = UDim2.new(1.1, 0, 1.1, 0), -- fills parent
+        Size = UDim2.new(1.07, 0, 1.07, 0), -- fills parent
         ScaleType = Enum.ScaleType.Fit -- keeps proportions
     })
 })
