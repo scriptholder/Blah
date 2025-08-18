@@ -6827,7 +6827,7 @@ local MinimizeButton = New("TextButton", {
         Image = (getgenv().Button_Icon and getgenv().Button_Icon ~= "" and getgenv().Button_Icon)
             or "rbxassetid://111720145628",
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 1, 0),
+        Size = UDim2.new(1.3, 0, 1.3, 0),
         ScaleType = Enum.ScaleType.Fit
     })
 })
