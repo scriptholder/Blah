@@ -6867,7 +6867,7 @@ local Minimizer
 if Mobile then
 	Minimizer = New("Frame", {
 		Parent = GUI,
-		Size = UDim2.new(0.08, 1, 0.1642, 1),
+		Size = UDim2.new(0.07, 1, 0.1640, 1),
 		Position = UDim2.new(0.45, 0, 0.025, 0),
 		BackgroundTransparency = 1,
 		ZIndex = 999999999,
