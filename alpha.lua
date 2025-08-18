@@ -6871,6 +6871,7 @@ if Mobile then
 		Position = UDim2.new(0.45, 0, 0.025, 0),
 		BackgroundTransparency = 1,
 		ZIndex = 999999999,
+	    Visible = false
 	},
 	{
 		New("Frame", {
