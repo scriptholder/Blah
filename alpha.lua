@@ -6680,6 +6680,41 @@ local InterfaceManager = {} do
 	end
 end
 
+					-- Ping counter
+function Section:AddPingCounter()
+    local label = self:AddLabel("Ping: 0ms")
+    task.spawn(function()
+        while label and label.Parent do
+            local ping = 0
+            pcall(function()
+                ping = math.floor(
+                    game:GetService("Stats")
+                        .Network.ServerStatsItem["Data Ping"]:GetValue() + 0.5
+                )
+            end)
+            label.Text = "Ping: " .. ping .. "ms"
+            task.wait(0.5)
+        end
+    end)
+    return label
+end
+
+-- FPS counter
+function Section:AddFpsCounter()
+    local label = self:AddLabel("FPS: 0")
+    task.spawn(function()
+        local RunService = game:GetService("RunService")
+        local frames, last = 0, tick()
+        RunService.RenderStepped:Connect(function(dt)
+            frames += 1
+            if tick() - last >= 1 then
+                label.Text = "FPS: " .. frames
+                frames, last = 0, tick()
+            end
+        end)
+    end)
+    return label
+					end
 function Library:CreateWindow(Config)
 	assert(Config.Title, "Window - Missing Title")
 
