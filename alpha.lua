@@ -6869,9 +6869,9 @@ if Mobile then
 		Parent = GUI,
 		Size = UDim2.new(0.07, 1, 0.1640, 1),
 		Position = UDim2.new(0.45, 0, 0.025, 0),
-		BackgroundTransparency = 1,
+		BackgroundTransparency = 0,
 		ZIndex = 999999999,
-	    Visible = false
+	
 	},
 	{
 		New("Frame", {
