@@ -6846,7 +6846,7 @@ local MinimizeButton = New("TextButton", {
     New("UIPadding", {
         PaddingBottom = UDim.new(0, 2),
         PaddingLeft = UDim.new(0, 2),
-        PaddingRight = UDim.new(0, 3),
+        PaddingRight = UDim.new(0, 2),
         PaddingTop = UDim.new(0, 2),
     }),
     New("ImageLabel", {
@@ -6855,7 +6855,7 @@ local MinimizeButton = New("TextButton", {
         Size = UDim2.new(1.07, 0, 1.07, 0), -- fills parent
         ScaleType = Enum.ScaleType.Fit, -- keeps proportions
         AnchorPoint = Vector2.new(0.5, 0.5), -- anchor center
-        Position = UDim2.new(0.52, 0, 0.5, 0),
+        Position = UDim2.new(0.53, 0, 0.5, 0),
 								})
 })
 
