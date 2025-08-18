@@ -1313,6 +1313,7 @@ end
 Creator.Themes = Themes
 Creator.Theme = Creator.Theme or "Dark"
 
+
 function Creator.GetThemeProperty(Property)
 	local Theme = Creator.Themes[Creator.Theme]
 	if Theme then
@@ -6812,6 +6813,28 @@ else
 	Fluent = Library
 end
 
+
+
+
+
+
+local ContentProvider = game:GetService("ContentProvider")
+
+local function PreloadIcon(assetId)
+    local img = Instance.new("ImageLabel")
+    img.Image = assetId
+    ContentProvider:PreloadAsync({img})
+    img:Destroy()
+end
+
+-- usage
+local Buttonicon = (getgenv().Button_Icon and getgenv().Button_Icon ~= "" and getgenv().Button_Icon)
+    or "rbxassetid://111720145628"
+
+PreloadIcon(icon) -- ✅ forces Roblox to fetch before UI build
+
+
+					
 local MinimizeButton = New("TextButton", {
     BackgroundTransparency = 1,
     Size = UDim2.new(1, 0, 1, 0),
@@ -6824,8 +6847,7 @@ local MinimizeButton = New("TextButton", {
         PaddingTop = UDim.new(0, 2),
     }),
     New("ImageLabel", {
-        Image = (getgenv().Button_Icon and getgenv().Button_Icon ~= "" and getgenv().Button_Icon)
-            or "rbxassetid://111720145628",
+        Image = Buttonicon,
         BackgroundTransparency = 1,
         Size = UDim2.new(1.3, 0, 1.3, 0),
         ScaleType = Enum.ScaleType.Fit
