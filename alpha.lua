@@ -1,7 +1,6 @@
 
 --- button
 local Show_Button = false
-local Button_Icon = ""
 ---
 
 local Lighting = game:GetService("Lighting")
@@ -6825,14 +6824,13 @@ local MinimizeButton = New("TextButton", {
         PaddingTop = UDim.new(0, 2),
     }),
     New("ImageLabel", {
-        Image = (config.Button_Icon and config.Button_Icon ~= "" and config.Button_Icon) 
-                or "rbxassetid://111720145628",
+        Image = (config.Button_Icon and config.Button_Icon ~= "" and config.Button_Icon)
+            or "rbxassetid://111720145628",
         BackgroundTransparency = 1,
-        Size = UDim2.fromOffset(24, 24), -- fixed icon size (make this bigger/smaller if you want)
-        ScaleType = Enum.ScaleType.Fit -- keeps aspect ratio inside the box
+        Size = UDim2.fromOffset(24, 24),
+        ScaleType = Enum.ScaleType.Fit
     })
 })
-
 
 local Minimizer
 
