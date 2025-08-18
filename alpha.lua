@@ -3530,6 +3530,67 @@ Components.Window = (function()
 	end
 end)()
 
+
+-- Inside alpha.lua (same place where Tab:AddSection is defined)
+
+function Tab:AddDrop(title)
+    local Drop = {}
+    Drop.Sections = {}
+    Drop.Open = false
+
+    -- Create the Drop Frame
+    local DropFrame = Creator.New("Frame", {
+        Name = "Drop_" .. title,
+        Parent = self.Container, -- attach to the tab's container
+        BackgroundColor3 = Creator.GetThemeProperty("Element"), -- use theme color
+        BorderColor3 = Creator.GetThemeProperty("ElementBorder"),
+        Size = UDim2.new(1, 0, 0, 32), -- closed height
+    }, {
+        Creator.New("TextLabel", {
+            Name = "Title",
+            Text = title,
+            TextColor3 = Creator.GetThemeProperty("Text"),
+            BackgroundTransparency = 1,
+            Font = Enum.Font.SourceSansBold,
+            TextSize = 16,
+            Size = UDim2.new(1, -24, 1, 0),
+            Position = UDim2.new(0, 8, 0, 0),
+            TextXAlignment = Enum.TextXAlignment.Left,
+        }),
+        Creator.New("TextButton", {
+            Name = "ToggleBtn",
+            Parent = nil, -- we will parent below
+            BackgroundTransparency = 1,
+            Text = "",
+            Size = UDim2.new(1,0,1,0),
+        }),
+    })
+
+    -- Put button on top
+    DropFrame.ToggleBtn.Parent = DropFrame
+
+    -- Expand/collapse logic
+    DropFrame.ToggleBtn.MouseButton1Click:Connect(function()
+        Drop.Open = not Drop.Open
+        if Drop.Open then
+            DropFrame.Size = UDim2.new(1, 0, 0, 150) -- expand height
+        else
+            DropFrame.Size = UDim2.new(1, 0, 0, 32) -- collapsed
+        end
+    end)
+
+    -- Add Section method inside the drop
+    function Drop:AddSection(name)
+        local section = self.Parent:CreateSection(name, DropFrame) 
+        table.insert(Drop.Sections, section)
+        return section
+    end
+
+    Drop.Frame = DropFrame
+    return Drop
+end
+					
+
 local ElementsTable = {}
 local AddSignal = Creator.AddSignal
 
