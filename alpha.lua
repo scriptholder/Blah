@@ -6839,7 +6839,7 @@ PreloadIcon(chosenIcon)
 
 -- build the button
 local MinimizeButton = New("TextButton", {
-    BackgroundTransparency = 1,
+    BackgroundTransparency = 0,
     Size = UDim2.new(1.05, 0, 1.05, 0),
     BorderSizePixel = 0
 }, {
@@ -6869,7 +6869,7 @@ if Mobile then
 		Parent = GUI,
 		Size = UDim2.new(0.07, 1, 0.1640, 1),
 		Position = UDim2.new(0.45, 0, 0.025, 0),
-		BackgroundTransparency = 0,
+		BackgroundTransparency = 1,
 		ZIndex = 999999999,
 	
 	},
