@@ -6824,14 +6824,13 @@ local MinimizeButton = New("TextButton", {
         PaddingTop = UDim.new(0, 2),
     }),
     New("ImageLabel", {
-        Image = (config.Button_Icon and config.Button_Icon ~= "" and config.Button_Icon)
+        Image = (getgenv().Button_Icon and getgenv().Button_Icon ~= "" and getgenv().Button_Icon)
             or "rbxassetid://111720145628",
         BackgroundTransparency = 1,
         Size = UDim2.fromOffset(24, 24),
         ScaleType = Enum.ScaleType.Fit
     })
 })
-
 local Minimizer
 
 if Mobile then
