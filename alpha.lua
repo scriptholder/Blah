@@ -6840,7 +6840,7 @@ PreloadIcon(chosenIcon)
 -- build the button
 local MinimizeButton = New("TextButton", {
     BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 1, 0),
+    Size = UDim2.new(1.05, 0, 1.05, 0),
     BorderSizePixel = 0
 }, {
     New("UIPadding", {
@@ -6852,7 +6852,7 @@ local MinimizeButton = New("TextButton", {
     New("ImageLabel", {
         Image = chosenIcon,
         BackgroundTransparency = 1,
-        Size = UDim2.new(1.3, 0, 1.3, 0), -- fills parent
+        Size = UDim2.new(1.1, 0, 1.1, 0), -- fills parent
         ScaleType = Enum.ScaleType.Fit -- keeps proportions
     })
 })
