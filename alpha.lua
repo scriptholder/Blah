@@ -6814,27 +6814,30 @@ else
 end
 
 
-
-
-
-
 local ContentProvider = game:GetService("ContentProvider")
 
 local function PreloadIcon(assetId)
-    local img = Instance.new("ImageLabel")
-    img.Image = assetId
-    ContentProvider:PreloadAsync({img})
-    img:Destroy()
+    local ok = pcall(function()
+        local img = Instance.new("ImageLabel")
+        img.Image = assetId
+        ContentProvider:PreloadAsync({img})
+        img:Destroy()
+    end)
+    if not ok then
+        warn("[Dead Hub] Failed to preload icon:", assetId)
+    end
 end
 
--- usage
-local Buttonicon = (getgenv().Button_Icon and getgenv().Button_Icon ~= "" and getgenv().Button_Icon)
-    or "rbxassetid://111720145628"
+-- pick custom or fallback
+local chosenIcon = getgenv().Button_Icon
+if type(chosenIcon) ~= "string" or not chosenIcon:find("rbxassetid://") then
+    chosenIcon = "rbxassetid://111720145628" -- fallback default
+end
 
-PreloadIcon(icon) -- ✅ forces Roblox to fetch before UI build
+-- force-load the image so it works first try
+PreloadIcon(chosenIcon)
 
-
-					
+-- build the button
 local MinimizeButton = New("TextButton", {
     BackgroundTransparency = 1,
     Size = UDim2.new(1, 0, 1, 0),
@@ -6847,12 +6850,16 @@ local MinimizeButton = New("TextButton", {
         PaddingTop = UDim.new(0, 2),
     }),
     New("ImageLabel", {
-        Image = Buttonicon,
+        Image = chosenIcon,
         BackgroundTransparency = 1,
-        Size = UDim2.new(1.3, 0, 1.3, 0),
-        ScaleType = Enum.ScaleType.Fit
+        Size = UDim2.new(1.3, 0, 1.3, 0), -- fills parent
+        ScaleType = Enum.ScaleType.Fit -- keeps proportions
     })
 })
+
+
+
+
 local Minimizer
 
 if Mobile then
