@@ -294,7 +294,7 @@ WebhookTab:AddButton({
         end
         local prev = WebhookEnabled
         WebhookEnabled = true -- force send for test
-        clientItems.ItemObtained(lp, "Test Sword of Doom", 2)
+        clientItems.ItemObtained(LocalPlayer, "Test Sword of Doom", 2)
         WebhookEnabled = prev
         Fluent:Notify({ Title = "Webhook Test Sent", Content = "Check your Discord channel.", Duration = 5 })
     end
