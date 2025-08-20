@@ -5,6 +5,8 @@ local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/d
 
 -- // Services
 local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
 local LocalPlayer = Players.LocalPlayer
@@ -117,29 +119,27 @@ local RS = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 
-local clientItems = require(RS.Modules.ClientModules.ClientItems)
+-- Try requiring clientItems safely
+local clientItems
+local clientItemsExists = pcall(function()
+    clientItems = require(RS.Modules.ClientModules.ClientItems)
+end)
 
--- webhook storage (editable via UI)
+-- Webhook variables
 local WEBHOOK_URL = ""
 local WebhookEnabled = false
-
--- collected items buffer for test button
 local collectedItems = {}
 
--- pick available request function (supports Ronix too)
+-- Request function detection
 local req = (syn and syn.request) or (http and http.request) or (http_request) or (fluxus and fluxus.request) or request
 
--- wrapper to send webhook
+-- Send webhook data
 local function sendWebhook(itemName, count)
-    if not WebhookEnabled then
-        return -- don't send if disabled
-    end
-
+    if not WebhookEnabled then return end
     if WEBHOOK_URL == "" then
         warn("⚠️ Webhook URL is empty, skipping send")
         return
     end
-
     if not req then
         warn("❌ No request function available, webhook can't be sent")
         return
@@ -164,28 +164,29 @@ local function sendWebhook(itemName, count)
     })
 end
 
--- batch sender for test button
+-- Send webhook for queued drops
 local function sendWebhookBatch(force)
     if not WebhookEnabled and not force then return end
     for _, drop in ipairs(collectedItems) do
         sendWebhook(drop.item, drop.count)
     end
-    collectedItems = {} -- clear buffer after sending
+    collectedItems = {}
 end
 
--- hook into ItemObtained
-local oldItemObtained
-oldItemObtained = hookfunction(clientItems.ItemObtained, function(player, itemName, count, ...)
-    print("[Item Obtained] Player:", player and player.Name or "nil", " | Item:", itemName, " | Count:", count)
+-- Hook clientItems.ItemObtained ONLY if it exists
+if clientItemsExists and clientItems and clientItems.ItemObtained then
+    local oldItemObtained
+    oldItemObtained = hookfunction(clientItems.ItemObtained, function(player, itemName, count, ...)
+        print("[Item Obtained] Player:", player and player.Name or "nil", " | Item:", itemName, " | Count:", count)
+        table.insert(collectedItems, { item = itemName, count = count })
+        sendWebhookBatch()
+        return oldItemObtained(player, itemName, count, ...)
+    end)
 
-    -- queue for webhook send
-    table.insert(collectedItems, { item = itemName, count = count })
-    sendWebhookBatch()
-
-    return oldItemObtained(player, itemName, count, ...)
-end)
-
-print("✅ Webhook logger hooked into ItemObtained. Rewards will show in Discord + console when enabled.")
+    print("✅ Webhook logger hooked into ItemObtained. Rewards will show in Discord + console when enabled.")
+else
+    warn("⚠️ clientItems module not found — webhook logger disabled")
+end
 
 -- 🟢 WEBHOOK UI TAB 🟢
 local WebhookTab = Window:AddTab({ Title = "Webhook", Icon = "globe" })
@@ -207,6 +208,14 @@ WebhookTab:AddToggle("WebhookToggle", {
     Title = "Enable Webhook Logger",
     Default = false,
     Callback = function(state)
+        if not clientItemsExists then
+            Fluent:Notify({
+                Title = "Webhook Logger",
+                Content = "❌ Can't enable webhook logging, clientItems missing!",
+                Duration = 5
+            })
+            return
+        end
         WebhookEnabled = state
         Fluent:Notify({
             Title = "Webhook Logger",
@@ -224,7 +233,6 @@ WebhookTab:AddButton({
             Fluent:Notify({ Title = "Error", Content = "Please input a webhook first!", Duration = 5 })
             return
         end
-
         table.insert(collectedItems, { item = "Test Drop", count = 1 })
         sendWebhookBatch(true)
         Fluent:Notify({ Title = "Webhook", Content = "✅ Test drop sent!", Duration = 5 })
@@ -233,14 +241,15 @@ WebhookTab:AddButton({
 
 WebhookTab:AddParagraph({ Title = "Webhook Credits", Content = "96ms & gs._" })
 
--- 🔥 TEST trigger (auto test after 3 sec)
-task.delay(3, function()
-    local lp = Players.LocalPlayer
-    print("🧪 Sending test item to webhook...")
-    sendWebhook("Test Sword of Doom", 2)
-    clientItems.ItemObtained(lp, "Test Sword of Doom", 2)
-end)
-
+-- 🔥 TEST trigger (only runs if clientItems exists)
+if clientItemsExists and clientItems and clientItems.ItemObtained then
+    task.delay(3, function()
+        local lp = Players.LocalPlayer
+        print("🧪 Sending test item to webhook...")
+        sendWebhook("Test Sword of Doom", 2)
+        clientItems.ItemObtained(lp, "Test Sword of Doom", 2)
+    end)
+end
 -- =========================================================
 -- SaveManager & InterfaceManager Setup
 -- =========================================================
