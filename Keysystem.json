@@ -17,6 +17,11 @@
       "durationMS": 864000000,
       "createdAt": 1755409802835,
       "hwid": null
+    },
+    "neincopycat": {
+      "durationMS": 2592000000,
+      "createdAt": 1755725563481,
+      "hwid": null
     }
   }
 }
