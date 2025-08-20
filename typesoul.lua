@@ -8,28 +8,66 @@ local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
-
 local LocalPlayer = Players.LocalPlayer
 
 -- =========================================================
 -- Global IDs / gating
 -- =========================================================
-local ALLOWED_GAME_ID = 115509275831248 -- webhook will only work in this universe
+local ALLOWED_GAME_ID = 115509275831248 -- only run webhook in this universe
 local PLACE_MAIN = 14067600077          -- matchmaking/main
 local PLACE_CULL = 18637069183          -- culling games
 
 -- =========================================================
--- Webhook internals (declare BEFORE UI callbacks use them)
+-- Persistence helpers (webhook settings)
 -- =========================================================
-local WEBHOOK_URL = ""
-local WebhookEnabled = false
-local collectedItems = {}
+local CONFIG_DIR_1 = "DeadScriptHub"
+local CONFIG_DIR_2 = "DeadScriptHub/TypeSoul"
+local CONFIG_FILE = CONFIG_DIR_2 .. "/webhook.json"
+
+local function safe(fn, ...)
+    local ok, r = pcall(fn, ...)
+    return ok, r
+end
+
+local function hasfs()
+    return (typeof(writefile)=="function" and typeof(readfile)=="function" and typeof(isfile)=="function" and typeof(makefolder)=="function")
+end
+
+local function ensureDirs()
+    if not hasfs() then return end
+    safe(function() if not isfolder(CONFIG_DIR_1) then makefolder(CONFIG_DIR_1) end end)
+    safe(function() if not isfolder(CONFIG_DIR_2) then makefolder(CONFIG_DIR_2) end end)
+end
+
+local function saveConfig(tbl)
+    if not hasfs() then return end
+    ensureDirs()
+    local ok, body = pcall(function() return HttpService:JSONEncode(tbl) end)
+    if ok then pcall(function() writefile(CONFIG_FILE, body) end) end
+end
+
+local function loadConfig()
+    if not hasfs() then return {} end
+    ensureDirs()
+    if not isfile(CONFIG_FILE) then return {} end
+    local ok, body = pcall(function() return readfile(CONFIG_FILE) end)
+    if not ok or not body or body == "" then return {} end
+    local ok2, data = pcall(function() return HttpService:JSONDecode(body) end)
+    return ok2 and data or {}
+end
+
+-- =========================================================
+-- Webhook internals (instant send; UI-controlled; rare ping)
+-- =========================================================
+local cfg = loadConfig()
+local WEBHOOK_URL = cfg.webhook_url or ""         -- set via UI
+local WebhookEnabled = cfg.webhook_enabled or false
 
 local req = (syn and syn.request)
          or (http and http.request)
          or http_request
          or (fluxus and fluxus.request)
-         or request -- Ronix
+         or request
 
 -- rare items that should ping everyone
 local pingItems = {
@@ -41,24 +79,19 @@ local pingItems = {
     ["Vow of Potential"] = true,
 }
 
-local function sendWebhookBatch(force)
-    if game.GameId ~= ALLOWED_GAME_ID then return end                 -- gate by universe
+local function sendWebhook(itemName, count)
+    if game.GameId ~= ALLOWED_GAME_ID then return end
     if not WebhookEnabled or WEBHOOK_URL == "" then return end
-    if not req then return warn("[Webhook] No request function available") end
-    if not force and #collectedItems == 0 then return end
+    if not req then return warn("❌ No request function available, webhook can't be sent") end
 
-    local desc, pingEveryone = "", false
-    for _, v in ipairs(collectedItems) do
-        desc = desc .. string.format("• **%s** × %s\n", v.item, v.count)
-        if pingItems[v.item] then pingEveryone = true end
-    end
+    local contentPing = (pingItems[tostring(itemName)] and "@everyone") or ""
 
     local data = {
         username = "Type Soul Logger",
-        content = pingEveryone and "@everyone" or "",
+        content = contentPing,
         embeds = {{
-            title = "🎯 Items Obtained!",
-            description = desc ~= "" and desc or "No items this batch.",
+            title = "🎯 Item Obtained!",
+            description = string.format("**Item:** %s\n**Count:** %s", tostring(itemName), tostring(count or 1)),
             color = 0x00FF00,
             footer = { text = "Type Soul Culling Games Tracker" },
             timestamp = DateTime.now():ToIsoDate()
@@ -73,67 +106,64 @@ local function sendWebhookBatch(force)
             Body = HttpService:JSONEncode(data)
         })
     end)
-
-    table.clear(collectedItems)
 end
 
--- background batch sender
-task.spawn(function()
-    while true do
-        task.wait(5)
-        sendWebhookBatch(false)
-    end
-end)
-
--- safe auto-hook for ClientItems (non-blocking, retries)
-local hooked = false
-local function tryHookClientItems()
-    if hooked then return end
-    -- only try to hook if we're in the allowed universe and (ideally) the culling place
-    if game.GameId ~= ALLOWED_GAME_ID then return end
-    -- try find module (no WaitForChild to avoid hanging)
-    local module
-    local modules = RS:FindFirstChild("Modules")
-    if modules then
-        local cm = modules:FindFirstChild("ClientModules")
-        if cm then module = cm:FindFirstChild("ClientItems") end
-    end
-    if not module then
-        for _, d in ipairs(RS:GetDescendants()) do
-            if d:IsA("ModuleScript") and d.Name == "ClientItems" then module = d break end
+-- =========================================================
+-- Hook ClientItems.ItemObtained (instant send)
+-- =========================================================
+local function hookClientItems()
+    local okReq, clientItems = pcall(function()
+        local modules = RS:FindFirstChild("Modules")
+        local cm = modules and modules:FindFirstChild("ClientModules")
+        local mod = cm and cm:FindFirstChild("ClientItems")
+        if not mod then
+            -- fallback deep search
+            for _, d in ipairs(RS:GetDescendants()) do
+                if d:IsA("ModuleScript") and d.Name == "ClientItems" then
+                    mod = d
+                    break
+                end
+            end
         end
+        return mod and require(mod) or nil
+    end)
+    if not okReq or not clientItems or type(clientItems.ItemObtained) ~= "function" then
+        return false
     end
-    if not module then return end
-
-    local ok, clientItems = pcall(require, module)
-    if not ok or type(clientItems) ~= "table" or type(clientItems.ItemObtained) ~= "function" then return end
-    if not hookfunction then return warn("[Webhook] hookfunction not available in this executor") end
+    if not hookfunction then
+        warn("[Webhook] hookfunction not available in this executor")
+        return false
+    end
 
     local old
     old = hookfunction(clientItems.ItemObtained, function(player, itemName, count, ...)
-        if WebhookEnabled and typeof(itemName) == "string" then
-            table.insert(collectedItems, { item = itemName, count = count })
+        if typeof(itemName) == "string" then
+            print("[Item Obtained] Player:", player and player.Name or "nil", "| Item:", itemName, "| Count:", count)
+            sendWebhook(itemName, count)
         end
         return old(player, itemName, count, ...)
     end)
 
-    hooked = true
-    print("[Webhook] Hooked ClientItems.ItemObtained")
+    print("✅ Webhook logger hooked into ItemObtained. Rewards will show in Discord + console.")
+    return true
 end
 
+-- keep retrying until hooked
 task.spawn(function()
-    while not hooked do
-        pcall(tryHookClientItems)
+    while true do
+        if hookClientItems() then break end
         task.wait(3)
     end
 end)
 
--- // Setup Window
+-- =========================================================
+-- Fluent UI Setup
+-- =========================================================
 local Window = Fluent:CreateWindow({
     Title = "type soul | Dead Hub",
     SubTitle = "Made by Dead | Version: "..Fluent.Version,
     TabWidth = 160,
-    Size = UDim2.fromOffset(540, 340),
+    Size = UDim2.fromOffset(540, 360),
     Acrylic = false,
     Theme = "Dark",
     Center = true,
@@ -145,7 +175,10 @@ local Window = Fluent:CreateWindow({
 -- Auto Culling Game Tab
 -- =========================================================
 local CullingTab = Window:AddTab({ Title = "Auto Culling Game", Icon = "swords" })
-CullingTab:AddParagraph({ Title = "⚠️ Reminder", Content = "Make sure to add this to auto load if you want to AFK farm it.\nTo add it just go to the settings tab and you will see everything." })
+CullingTab:AddParagraph({
+    Title = "⚠️ Reminder",
+    Content = "Make sure to add this to auto load if you want to AFK farm it.\nTo add it just go to the settings tab and you will see everything."
+})
 
 local chosenSlot = "A"
 CullingTab:AddDropdown("SlotSelect", {
@@ -154,7 +187,7 @@ CullingTab:AddDropdown("SlotSelect", {
     Multi = false,
     Default = 1,
     Callback = function(value)
-        chosenSlot = value:upper()
+        chosenSlot = tostring(value or "A"):upper()
     end
 })
 
@@ -166,17 +199,13 @@ CullingTab:AddToggle("AutoTP", {
         AutoTP = state
         task.spawn(function()
             while AutoTP do
-                -- Only try in main place; skip if already in culling/matchmaking places
                 if game.PlaceId ~= PLACE_CULL then
                     local rem = RS:FindFirstChild("Remotes")
                     local chooseSlot = rem and rem:FindFirstChild("ChooseSlot")
                     if chooseSlot then
-                        local ok, err = pcall(function()
+                        pcall(function()
                             chooseSlot:InvokeServer(chosenSlot, "Matchmaking")
                         end)
-                        if not ok then warn("[AutoTP] Invoke failed:", err) end
-                    else
-                        -- silent; remote might not exist yet
                     end
                 end
                 task.wait(5)
@@ -197,12 +226,10 @@ CullingTab:AddToggle("AutoStart", {
                     local rem = RS:FindFirstChild("Remotes")
                     local teamR = rem and rem:FindFirstChild("Team")
                     if teamR then
-                        local ok, err = pcall(function()
+                        pcall(function()
                             teamR:FireServer("JoinQueue", "CULLING GAMES")
                         end)
-                        if not ok then warn("[AutoStart] FireServer failed:", err) end
                     end
-
                     -- wait 2 mins and serverhop if stuck
                     local start = tick()
                     while AutoStart and tick() - start < 120 do task.wait(1) end
@@ -220,35 +247,56 @@ CullingTab:AddToggle("AutoStart", {
 -- Webhook Tab
 -- =========================================================
 local WebhookTab = Window:AddTab({ Title = "Webhook", Icon = "globe" })
-WebhookTab:AddParagraph({ Title = "⚠️ Reminder", Content = "Make sure to add this to auto load if you want to AFK farm it.\nTo add it just go to the settings tab and you will see everything." })
+WebhookTab:AddParagraph({
+    Title = "⚡ Webhook Logger",
+    Content = "Logs your item drops instantly to your Discord webhook. Rare drops will ping @everyone."
+})
+
+local function persist()
+    saveConfig({
+        webhook_url = WEBHOOK_URL,
+        webhook_enabled = WebhookEnabled
+    })
+end
 
 WebhookTab:AddInput("WebhookInput", {
     Title = "Webhook URL",
     Placeholder = "Enter your webhook here",
+    Default = WEBHOOK_URL,
     Callback = function(value)
         WEBHOOK_URL = value or ""
+        persist()
+        Fluent:Notify({ Title = "Webhook Updated", Content = (WEBHOOK_URL ~= "" and "New webhook URL saved.") or "Cleared webhook URL.", Duration = 4 })
     end
 })
 
 WebhookTab:AddToggle("WebhookToggle", {
     Title = "Enable Webhook Logger",
-    Default = false,
+    Default = WebhookEnabled,
     Callback = function(state)
-        WebhookEnabled = state
+        WebhookEnabled = state and true or false
+        persist()
+        Fluent:Notify({
+            Title = WebhookEnabled and "Webhook Enabled" or "Webhook Disabled",
+            Content = WebhookEnabled and "Drops will now be logged." or "Drops will not be logged.",
+            Duration = 4
+        })
     end
 })
 
 WebhookTab:AddButton({
     Title = "Test Webhook",
-    Description = "Send test drops to your webhook",
+    Description = "Send a test drop to your webhook",
     Callback = function()
         if WEBHOOK_URL == "" then
-            Fluent:Notify({Title = "Error", Content = "Please input a webhook first!", Duration = 5})
+            Fluent:Notify({ Title = "Error", Content = "Please input a webhook first!", Duration = 5 })
             return
         end
-        -- queue a test drop and force-send
-        table.insert(collectedItems, { item = "Test Drop", count = 1 })
-        sendWebhookBatch(true)
+        local prev = WebhookEnabled
+        WebhookEnabled = true -- force send for test
+        sendWebhook("Test Sword of Doom", 2)
+        WebhookEnabled = prev
+        Fluent:Notify({ Title = "Webhook Test Sent", Content = "Check your Discord channel.", Duration = 5 })
     end
 })
 
@@ -258,7 +306,6 @@ WebhookTab:AddParagraph({ Title = "Webhook Credits", Content = "96ms & gs._" })
 -- SaveManager & InterfaceManager Setup
 -- =========================================================
 local Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
-
 
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
