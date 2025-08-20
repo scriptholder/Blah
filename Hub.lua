@@ -7,6 +7,11 @@ local scriptMappings = {
     [129827112113663] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/pro.lua",
     [98632918083844] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/Bro.lua",
     [131603408057162] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/cage.lua",
+    [14067600077] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
+    [18637069183] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
+    [115509275831248] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
+    
+    
 }
 
 
