@@ -42,7 +42,9 @@ local Window = Fluent:CreateWindow({
 local CullingTab = Window:AddTab({ Title = "Auto Culling Game", Icon = "swords" })
 CullingTab:AddParagraph({ Title = "⚠️ Reminder", Content = "Make sure to add this to auto load if you want to AFK farm it.\nTo add it just go to the settings tab and you will see everything." })
 
-local chosenSlot = "A"
+local chosenSlot = "D"
+local main1 = 14067600077 -- Replace this with the main game place ID
+
 CullingTab:AddDropdown("SlotSelect", {
     Title = "Choose Slot",
     Values = {"A", "B", "C", "D"},
@@ -50,6 +52,7 @@ CullingTab:AddDropdown("SlotSelect", {
     Default = 1,
     Callback = function(value)
         chosenSlot = value:upper()
+        print("[Slot Selected] ->", chosenSlot)
     end
 })
 
@@ -61,20 +64,31 @@ CullingTab:AddToggle("AutoTP", {
         AutoTP = state
         task.spawn(function()
             while AutoTP do
-                -- Only try in main place; skip if already in culling/matchmaking places
-                if game.PlaceId ~= PLACE_CULL then
+                -- Check if we're not already in the culling/matchmaking place
+                if game.PlaceId ~= main1 then
                     local rem = RS:FindFirstChild("Remotes")
                     local chooseSlot = rem and rem:FindFirstChild("ChooseSlot")
+
                     if chooseSlot then
                         local ok, err = pcall(function()
+                            -- Call the remote with slot + matchmaking
+                            print("[AutoTP] Trying to TP with slot:", chosenSlot)
                             chooseSlot:InvokeServer(chosenSlot, "Matchmaking")
                         end)
-                        if not ok then warn("[AutoTP] Invoke failed:", err) end
+
+                        if not ok then
+                            warn("[AutoTP] Failed to TP:", err)
+                        else
+                            print("[AutoTP] Teleport request sent successfully!")
+                        end
                     else
-                        -- silent; remote might not exist yet
+                        warn("[AutoTP] Couldn't find ChooseSlot remote!")
                     end
+                else
+                    print("[AutoTP] Already inside Culling place, skipping...")
                 end
-                task.wait(5)
+
+                task.wait(5) -- Wait before trying again
             end
         end)
     end
