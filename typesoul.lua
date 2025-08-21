@@ -321,7 +321,7 @@ SaveManager:LoadAutoloadConfig()
 
 
 -- // Auto rejoin Type Soul after 950 seconds (~15m 50s)
-task.delay(1100, function()
+task.delay(1200, function()
     local TeleportService = game:GetService("TeleportService")
     local Players = game:GetService("Players")
     local player = Players.LocalPlayer
