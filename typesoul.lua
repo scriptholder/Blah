@@ -114,7 +114,6 @@ CullingTab:AddToggle("AutoStart", {
 -- =========================================================
 -- Webhook Tab
 -- =========================================================
-
 local RS = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
@@ -129,11 +128,12 @@ end)
 local WEBHOOK_URL = ""
 local WebhookEnabled = false
 local collectedItems = {}
+local sending = false
 
 -- Request function detection
 local req = (syn and syn.request) or (http and http.request) or (http_request) or (fluxus and fluxus.request) or request
 
--- Send webhook data
+-- Send webhook data (queue items)
 local function sendWebhook(itemName, count)
     if not WebhookEnabled then return end
     if WEBHOOK_URL == "" then
@@ -145,32 +145,63 @@ local function sendWebhook(itemName, count)
         return
     end
 
-    local data = {
-        username = "Type Soul Logger",
-        embeds = {{
-            title = "🎯 Item Obtained!",
-            description = string.format("**Item:** %s\n**Count:** %s", itemName, count),
-            color = 0x00FF00,
-            footer = { text = "Type Soul Culling Games Tracker" },
-            timestamp = DateTime.now():ToIsoDate()
-        }}
-    }
-
-    req({
-        Url = WEBHOOK_URL,
-        Method = "POST",
-        Headers = { ["Content-Type"] = "application/json" },
-        Body = HttpService:JSONEncode(data)
-    })
-end
-
--- Send webhook for queued drops
-local function sendWebhookBatch(force)
-    if not WebhookEnabled and not force then return end
+    -- Check if item already exists in the queue, if so, add to its count
+    local found = false
     for _, drop in ipairs(collectedItems) do
-        sendWebhook(drop.item, drop.count)
+        if drop.item == itemName then
+            drop.count = drop.count + count
+            found = true
+            break
+        end
     end
-    collectedItems = {}
+
+    -- If item wasn't found, insert as new
+    if not found then
+        table.insert(collectedItems, { item = itemName, count = count })
+    end
+
+    -- If we're already waiting to send, don't start a new timer
+    if sending then return end
+    sending = true
+
+    -- Wait 2 seconds, then send one webhook for all collected items if any exist
+    task.delay(2, function()
+        if #collectedItems == 0 then
+            sending = false
+            return
+        end
+
+        -- Build one embed description for all items
+        local description = ""
+        for _, drop in ipairs(collectedItems) do
+            description = description .. string.format("**Item:** %s | **Count:** %s\n", drop.item, drop.count)
+        end
+
+        local data = {
+            username = "Type Soul Logger",
+            embeds = {{
+                title = "🎯 Items Obtained!",
+                description = description,
+                color = 0x00FF00,
+                footer = { text = "Type Soul Culling Games Tracker" },
+                timestamp = DateTime.now():ToIsoDate()
+            }}
+        }
+
+        -- Double-check: only send if there are still items
+        if #collectedItems > 0 then
+            req({
+                Url = WEBHOOK_URL,
+                Method = "POST",
+                Headers = { ["Content-Type"] = "application/json" },
+                Body = HttpService:JSONEncode(data)
+            })
+        end
+
+        -- Clear collected items and reset sending state
+        collectedItems = {}
+        sending = false
+    end)
 end
 
 -- Hook clientItems.ItemObtained ONLY if it exists
@@ -178,8 +209,7 @@ if clientItemsExists and clientItems and clientItems.ItemObtained then
     local oldItemObtained
     oldItemObtained = hookfunction(clientItems.ItemObtained, function(player, itemName, count, ...)
         print("[Item Obtained] Player:", player and player.Name or "nil", " | Item:", itemName, " | Count:", count)
-        table.insert(collectedItems, { item = itemName, count = count })
-        sendWebhookBatch()
+        sendWebhook(itemName, count)
         return oldItemObtained(player, itemName, count, ...)
     end)
 
@@ -246,7 +276,6 @@ if clientItemsExists and clientItems and clientItems.ItemObtained then
     task.delay(3, function()
         local lp = Players.LocalPlayer
         print("🧪 Sending test item to webhook...")
-        sendWebhook("Test Sword of Doom", 2)
         clientItems.ItemObtained(lp, "Test Sword of Doom", 2)
     end)
 end
@@ -274,3 +303,19 @@ Fluent:Notify({
 })
 
 SaveManager:LoadAutoloadConfig()
+
+
+-- // Auto rejoin Type Soul after 950 seconds (~15m 50s)
+task.delay(950, function()
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+
+    -- Safety check to avoid errors
+    if player and TeleportService then
+        warn("⏳ 950 seconds passed! Rejoining Type Soul...")
+        TeleportService:Teleport(14067600077, player)
+    else
+        warn("⚠️ Couldn't rejoin — TeleportService or LocalPlayer missing.")
+    end
+end)
