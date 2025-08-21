@@ -276,6 +276,7 @@ if clientItemsExists and clientItems and clientItems.ItemObtained then
     task.delay(3, function()
         local lp = Players.LocalPlayer
         print("🧪 Sending test item to webhook...")
+            sendWebhook("Test Sword of Doom", 2)
         clientItems.ItemObtained(lp, "Test Sword of Doom", 2)
     end)
 end
