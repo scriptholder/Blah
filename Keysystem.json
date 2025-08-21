@@ -32,6 +32,11 @@
       "durationMS": 2592000000,
       "createdAt": 1755734179998,
       "hwid": "662f648d-16ce-4075-bc8c-51ef2871957c"
+    },
+    "sadewa": {
+      "durationMS": 2592000000,
+      "createdAt": 1755738625311,
+      "hwid": null
     }
   }
 }
