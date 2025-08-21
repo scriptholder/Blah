@@ -42,7 +42,7 @@ local Window = Fluent:CreateWindow({
 local CullingTab = Window:AddTab({ Title = "Auto Culling Game", Icon = "swords" })
 CullingTab:AddParagraph({ Title = "⚠️ Reminder", Content = "Make sure to add this to auto load if you want to AFK farm it.\nTo add it just go to the settings tab and you will see everything." })
 
-local chosenSlot = "D"
+local chosenSlot = ""
 local main1 = 14067600077 -- Replace this with the main game place ID
 
 CullingTab:AddDropdown("SlotSelect", {
