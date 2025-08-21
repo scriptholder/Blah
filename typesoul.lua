@@ -125,12 +125,15 @@ CullingTab:AddToggle("AutoStart", {
     end
 })
 
--- =========================================================
+
+
+-- ========================================================= --
 -- Webhook Tab
--- =========================================================
+-- ========================================================= --
 local RS = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 
 -- Try requiring clientItems safely
 local clientItems
@@ -143,9 +146,30 @@ local WEBHOOK_URL = ""
 local WebhookEnabled = false
 local collectedItems = {}
 local sending = false
+local AutoCrashOnSpecialItem = false -- 🆕 Auto crash toggle
 
 -- Request function detection
 local req = (syn and syn.request) or (http and http.request) or (http_request) or (fluxus and fluxus.request) or request
+
+-- Items that should ping @everyone and trigger auto-leave if enabled
+local pingItems = {
+    ["Yhwach's Blood"] = true,
+    ["Vow Of Luck"] = true,
+    ["Hogyoku Ball"] = true,
+    ["Vow Of Sacrifice"] = true,
+    ["Vow Of Potential"] = true,
+    ["Hogyoku Fragment"] = true,
+    ["Skill Box"] = true,
+    ["Skill box Chooser"] = true
+}
+
+-- Function to handle special items (leave game if toggle is on)
+local function handleSpecialItem(itemName)
+    if AutoCrashOnSpecialItem and pingItems[itemName] then
+        warn("⚠️ Special item found: " .. itemName .. " — Leaving the game!")
+        TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
+    end
+end
 
 -- Send webhook data (queue items)
 local function sendWebhook(itemName, count)
@@ -187,16 +211,21 @@ local function sendWebhook(itemName, count)
 
         -- Build one embed description for all items
         local description = ""
+        local shouldPing = false
         for _, drop in ipairs(collectedItems) do
             description = description .. string.format("**Item:** %s | **Count:** %s\n", drop.item, drop.count)
+            if pingItems[drop.item] then
+                shouldPing = true
+            end
         end
 
         local data = {
             username = "Type Soul Logger",
+            content = shouldPing and "@everyone" or nil,
             embeds = {{
                 title = "🎯 Items Obtained!",
                 description = description,
-                color = 0x00FF00,
+                color = shouldPing and 0xFF0000 or 0x00FF00,
                 footer = { text = "Type Soul Culling Games Tracker" },
                 timestamp = DateTime.now():ToIsoDate()
             }}
@@ -223,6 +252,7 @@ if clientItemsExists and clientItems and clientItems.ItemObtained then
     local oldItemObtained
     oldItemObtained = hookfunction(clientItems.ItemObtained, function(player, itemName, count, ...)
         print("[Item Obtained] Player:", player and player.Name or "nil", " | Item:", itemName, " | Count:", count)
+        handleSpecialItem(itemName) -- 🆕 Leave game if special item found
         sendWebhook(itemName, count)
         return oldItemObtained(player, itemName, count, ...)
     end)
@@ -269,6 +299,20 @@ WebhookTab:AddToggle("WebhookToggle", {
     end
 })
 
+-- 🆕 New toggle for auto-crash/leave
+WebhookTab:AddToggle("AutoCrashToggle", {
+    Title = "Auto Crash if Special Item Found",
+    Default = false,
+    Callback = function(state)
+        AutoCrashOnSpecialItem = state
+        Fluent:Notify({
+            Title = "Special Item Auto Crash",
+            Content = state and "✅ Enabled auto crash on special item!" or "❌ Disabled auto crash on special item!",
+            Duration = 5
+        })
+    end
+})
+
 WebhookTab:AddButton({
     Title = "Test Webhook",
     Description = "Send test drops to your webhook",
@@ -278,7 +322,7 @@ WebhookTab:AddButton({
             return
         end
         table.insert(collectedItems, { item = "Test Drop", count = 1 })
-        sendWebhookBatch(true)
+        sendWebhook("Test Drop", 1)
         Fluent:Notify({ Title = "Webhook", Content = "✅ Test drop sent!", Duration = 5 })
     end
 })
@@ -290,10 +334,11 @@ if clientItemsExists and clientItems and clientItems.ItemObtained then
     task.delay(3, function()
         local lp = Players.LocalPlayer
         print("🧪 Sending test item to webhook...")
-            sendWebhook("Test Sword of Doom", 2)
+        sendWebhook("Test Sword of Doom", 2)
         clientItems.ItemObtained(lp, "Test Sword of Doom", 2)
     end)
 end
+    
 -- =========================================================
 -- SaveManager & InterfaceManager Setup
 -- =========================================================
