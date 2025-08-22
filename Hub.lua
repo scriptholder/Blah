@@ -10,6 +10,7 @@ local scriptMappings = {
     [14067600077] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
     [18637069183] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
     [115509275831248] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
+    [95712269457211] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/tractor.lua",
     
     
 }
