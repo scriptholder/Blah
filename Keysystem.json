@@ -60,6 +60,11 @@
       "durationMS": 86400000,
       "createdAt": 1755986117263,
       "hwid": "508al133"
+    },
+    "4C9D9F8F18D2": {
+      "durationMS": 86400000,
+      "createdAt": 1755986608024,
+      "hwid": "Dead"
     }
   }
 }
