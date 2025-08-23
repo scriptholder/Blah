@@ -59,6 +59,11 @@
       "durationMS": 86400000,
       "createdAt": 1755988300943,
       "hwid": "4950e3ae-8f5c-4274-b442-d83ee69a3d76"
+    },
+    "669F8837D342": {
+      "durationMS": 86400000,
+      "createdAt": 1755988493874,
+      "hwid": "7f6966b0-af3b-4afe-b3bb-9c2c7453aec4"
     }
   }
 }
