@@ -39,5 +39,11 @@
       "hwid": "a6ac7b5b-6d8a-44de-aff9-d77a577ee2f0"
     }
   },
-  "users": {}
+  "users": {
+    "9A4463043C38": {
+      "durationMS": 86400000,
+      "createdAt": 1755987974447,
+      "hwid": "2cedc79e-9c6d-4708-bb2a-22688a0b7ccd"
+    }
+  }
 }
