@@ -99,6 +99,11 @@
       "durationMS": 86400000,
       "createdAt": 1755991433990,
       "hwid": "3290C7BC-C9C5-49AA-BC8F-3D92A5473363"
+    },
+    "F1096F15A277": {
+      "durationMS": 86400000,
+      "createdAt": 1755991889431,
+      "hwid": "Mobile"
     }
   }
 }
