@@ -1,5 +1,5 @@
 {
-  "freeKey": "85KVIEWSONG",
+  "freeKey": "DB6DA98B9896",
   "premiumKeys": {
     "VIP": {
       "durationMS": 31536000000,
@@ -39,5 +39,12 @@
       "hwid": "a6ac7b5b-6d8a-44de-aff9-d77a577ee2f0"
     }
   },
-  "userskeys": {}
+  "userskeys": {},
+  "users": {
+    "DB6DA98B9896": {
+      "createdAt": 1755982875821,
+      "durationMS": 86400000,
+      "hwid": "Hei"
+    }
+  }
 }
