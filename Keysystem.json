@@ -65,6 +65,11 @@
       "durationMS": 86400000,
       "createdAt": 1755986608024,
       "hwid": "Dead"
+    },
+    "45F700016A36": {
+      "durationMS": 86400000,
+      "createdAt": 1755986699106,
+      "hwid": "Tracrtor"
     }
   }
 }
