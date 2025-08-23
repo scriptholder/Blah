@@ -39,57 +39,6 @@
       "hwid": "a6ac7b5b-6d8a-44de-aff9-d77a577ee2f0"
     }
   },
-  "userskeys": {},
   "users": {
-    "DB6DA98B9896": {
-      "createdAt": 1755982875821,
-      "durationMS": 86400000,
-      "hwid": "Hei"
-    },
-    "A5A234FF0F63": {
-      "durationMS": 86400000,
-      "createdAt": 1755985305396,
-      "hwid": "Ohioonichan"
-    },
-    "353CD5F0C79D": {
-      "durationMS": 86400000,
-      "createdAt": 1755985811359,
-      "hwid": ".."
-    },
-    "0425F360A954": {
-      "durationMS": 86400000,
-      "createdAt": 1755986117263,
-      "hwid": "508al133"
-    },
-    "4C9D9F8F18D2": {
-      "durationMS": 86400000,
-      "createdAt": 1755986608024,
-      "hwid": "Dead"
-    },
-    "45F700016A36": {
-      "durationMS": 86400000,
-      "createdAt": 1755986699106,
-      "hwid": "Tracrtor"
-    },
-    "D92F15A494AC": {
-      "durationMS": 86400000,
-      "createdAt": 1755986767606,
-      "hwid": "Tut"
-    },
-    "CA015AA83CC9": {
-      "durationMS": 86400000,
-      "createdAt": 1755986867395,
-      "hwid": "Diddy"
-    },
-    "3AA940AA0531": {
-      "durationMS": 86400000,
-      "createdAt": 1755986967822,
-      "hwid": "2cedc79e-9c6d-4708-bb2a-22688a0b7ccd"
-    },
-    "4A703580ACCC": {
-      "durationMS": 86400000,
-      "createdAt": 1755987277404,
-      "hwid": "https://discord.gg/t6SKTqyJFN"
-    }
   }
 }
