@@ -37,11 +37,6 @@
       "durationMS": 2592000000,
       "createdAt": 1755738625311,
       "hwid": "a6ac7b5b-6d8a-44de-aff9-d77a577ee2f0"
-    },
-    "hi": {
-      "durationMS": 120000,
-      "createdAt": 1755930150846,
-      "hwid": null
     }
   },
   "userskeys": {},
