@@ -1,5 +1,5 @@
 local scriptMappings = {
-    -- [137925884276740] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/plan.lua",
+    [137925884276740] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/plan.lua",
     [123963759682880] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/train.lua",
     [88728793053496] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/car.lua",
     [101949297449238] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/Island.lua",
@@ -7,9 +7,9 @@ local scriptMappings = {
     [129827112113663] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/pro.lua",
     [98632918083844] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/Bro.lua",
     [131603408057162] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/cage.lua",
-  --  [14067600077] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
-   -- [18637069183] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
-   -- [115509275831248] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
+    [14067600077] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
+    [18637069183] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
+    [115509275831248] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/typesoul.lua",
     [95712269457211] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/tractor.lua",
     
     
