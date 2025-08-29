@@ -1,3 +1,6 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/DeadScripter/Deadhub/refs/heads/main/Justloadingthebuttongng.lua", true))()
+
+
 local scriptMappings = {
     [137925884276740] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/plan.lua",
     [123963759682880] = "https://raw.githubusercontent.com/scriptholder/Blah/refs/heads/main/train.lua",
@@ -38,3 +41,5 @@ if url then
 else
     warn("No script found for this PlaceId:", currentPlace)
 end
+
+
