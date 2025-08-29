@@ -6,18 +6,6 @@
       "createdAt": 1755409771661,
       "hwid": "2cedc79e-9c6d-4708-bb2a-22688a0b7ccd"
     },
-    "ghost": {
-      "durationMS": 604800000,
-      "createdAt": 1755409790126,
-      "hwid": [
-        "33813a45-9dd9-4fbb-872b-348669973d76"
-      ]
-    },
-    "alexis": {
-      "durationMS": 864000000,
-      "createdAt": 1755409802835,
-      "hwid": null
-    },
     "neincopycat": {
       "durationMS": 2592000000,
       "createdAt": 1755725563481,
@@ -110,5 +98,6 @@
       "createdAt": 1755991959195,
       "hwid": "4aa51f20-d157-4892-87ec-012e46450c16"
     }
-  }
+  },
+  "userskeys": {}
 }
